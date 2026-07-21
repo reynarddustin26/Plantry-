@@ -697,3 +697,64 @@ codebase was touched.
 - Meets blueprint §9's core requirement directly: the app is fully usable
   right now with `ANTHROPIC_API_KEY` absent, because that's the actual
   current state, not a hypothetical one.
+
+---
+
+## Section I — Phase 8 Execution (Polish, Reliability)
+
+### What was built
+- **Loading skeletons**: `components/ui/Skeleton.tsx` (+ `ProductCardSkeleton`/
+  `RecipeCardSkeleton`/`CartLineSkeleton`) and matching `loading.tsx` files
+  for every route with real async work — `/shop`, `/shop/product/[id]`,
+  `/shop/compare`, `/cookbook`, `/cookbook/recipes/[id]`, `/cart`,
+  `/pantry`, `/profile` — using Next's App Router `loading.tsx` convention
+  (automatic Suspense boundary per route segment), shaped to match each
+  route's real layout, not a generic spinner.
+- **Error boundaries**: `app/error.tsx` (client component, wraps every
+  nested page/loading/not-found file per Next's inheritance model — this
+  *is* "every page," not a gap; 17 near-duplicate per-route files would add
+  no real coverage) and `app/global-error.tsx` (catches errors in the root
+  layout itself, which `error.tsx` structurally cannot reach; defines its
+  own inline-styled `<html>/<body>` since Tailwind may not be available if
+  the layout itself failed). Both use `unstable_retry` — the prop this exact
+  Next.js version (16.2.0+) added and now recommends over the older `reset`
+  (verified via `node_modules/next/dist/docs`, not assumed).
+- **Desktop grid polish**: `/shop` (2→3→4 cols) and `/cookbook` (2→3 cols)
+  gained `lg:`/`xl:` grid breakpoints, matching the Phase 5 desktop-layout
+  fix already applied to the opening/store-selection/demo-profile screens.
+- **Landing hero — brand colors, animated gradient, mascot**: added the
+  exact CSS custom properties requested (`--forest-deep` through `--gold`)
+  as a `:root` block in `app/globals.css`, scoped to the hero only (the
+  rest of the app's UI chrome keeps its existing `@theme` tokens — this
+  isn't a site-wide recolor). `.hero-orb-*` classes + `@keyframes drift-1/
+  2/3` animate 4 blurred radial-gradient orbs (emerald/mint/amber/forest)
+  slowly drifting behind the hero content, disabled under
+  `prefers-reduced-motion`. `components/common/PlantryMascot.tsx` — a
+  hand-drawn inline SVG "concentric spheres" character (3 nested circles +
+  a small sprout + a simple face), no external asset needed. Both wired
+  into `app/page.tsx`'s hero via the new `HeroOrbBackground` wrapper;
+  the functional intent-picker grid below it is untouched.
+
+### Gate status: complete, all green, live-verified
+- `npm run lint` ✓ (one warning found and fixed: unused `error` param in
+  `global-error.tsx` — now logged via `console.error`, matching
+  `error.tsx`'s pattern).
+- `npm run build` ✓ — zero TypeScript errors, all 18 routes registered
+  correctly (`/api/ai/explain` from Phase 7, plus everything above).
+- `npm run test` ✓ — 96/96, unchanged (this phase is UI/infra, not new
+  business logic).
+- `npm run e2e` ✓ — 6/6, including the intent-selection journey that starts
+  from the exact page (`app/page.tsx`) whose hero was rewritten — proves the
+  redesign didn't break the underlying flow.
+- Visually verified via Chrome DevTools MCP at both 375px and 1440px: the
+  hero renders correctly (mascot, heading, drifting orbs, legible contrast)
+  at both sizes with zero console errors; `/shop`'s new 4-column and
+  `/cookbook`'s new 3-column desktop grids render cleanly with zero console
+  errors.
+
+### Deploy: blocked (see BLOCKED.md)
+No git remote is configured in this repo, so `git push` cannot reach
+GitHub/Vercel. This was already documented in `BLOCKED.md` earlier tonight,
+before any Phase 8 work started — not a new discovery. The commit for this
+phase is made locally as instructed; pushing needs a remote added and either
+your push or your go-ahead for me to do it.

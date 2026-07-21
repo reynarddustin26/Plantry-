@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { SelectableCard } from '@/components/ui/Card';
+import { HeroOrbBackground } from '@/components/common/HeroOrbBackground';
+import { PlantryMascot } from '@/components/common/PlantryMascot';
 import { useProfileStore } from '@/store/profileStore';
 import { staggerContainer } from '@/lib/motion';
 import type { Intent } from '@/lib/types';
@@ -26,15 +28,23 @@ export default function Home() {
 
   return (
     <div className="flex flex-col gap-6">
-      <div>
-        <h1 className="text-2xl font-extrabold lg:text-4xl">
-          What are you shopping for today?
-        </h1>
-        <p className="mt-1 text-sm text-muted-foreground lg:mt-3 lg:text-base">
-          Tell Plantry your goal — it turns groceries into a basket, and a
-          basket into meals.
-        </p>
-      </div>
+      <HeroOrbBackground>
+        <div className="flex flex-col items-center gap-4 text-center lg:flex-row lg:items-center lg:gap-8 lg:text-left">
+          <PlantryMascot className="h-28 w-28 shrink-0 lg:h-40 lg:w-40" />
+          <div>
+            <h1 className="text-2xl font-extrabold text-white lg:text-4xl">
+              What are you shopping for today?
+            </h1>
+            <p
+              className="mt-1 text-sm lg:mt-3 lg:text-base"
+              style={{ color: 'var(--mint-light)' }}
+            >
+              Tell Plantry your goal — it turns groceries into a basket, and a
+              basket into meals.
+            </p>
+          </div>
+        </div>
+      </HeroOrbBackground>
 
       <motion.div
         initial="hidden"

@@ -42,6 +42,96 @@ body {
   font-family: var(--font-sans);
 }
 
+/*
+  Landing-hero-only brand palette + animated gradient background (Phase 8).
+  Deliberately separate from the @theme tokens above, which drive the whole
+  app's UI chrome — these are specific to the hero's "fun/goofy but
+  professional" visual identity (blueprint §4), not a site-wide recolor.
+*/
+:root {
+  --forest-deep: #072a20;
+  --forest: #0b3d2e;
+  --emerald: #10b981;
+  --mint: #34d399;
+  --mint-light: #5eeab0;
+  --amber: #f5a623;
+  --gold: #f9c05b;
+}
+
+.hero-gradient-bg {
+  position: relative;
+  overflow: hidden;
+  background: linear-gradient(180deg, var(--forest-deep), var(--forest));
+  isolation: isolate;
+}
+
+.hero-orb {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(48px);
+  opacity: 0.55;
+  z-index: 0;
+  will-change: transform;
+}
+
+.hero-orb-1 {
+  width: 22rem;
+  height: 22rem;
+  top: -6rem;
+  left: -4rem;
+  background: radial-gradient(circle, var(--emerald), transparent 70%);
+  animation: drift-1 22s ease-in-out infinite;
+}
+
+.hero-orb-2 {
+  width: 18rem;
+  height: 18rem;
+  bottom: -5rem;
+  right: -3rem;
+  background: radial-gradient(circle, var(--mint), transparent 70%);
+  animation: drift-2 26s ease-in-out infinite;
+}
+
+.hero-orb-3 {
+  width: 16rem;
+  height: 16rem;
+  top: 30%;
+  right: 15%;
+  background: radial-gradient(circle, var(--amber), transparent 70%);
+  animation: drift-3 30s ease-in-out infinite;
+}
+
+.hero-orb-4 {
+  width: 14rem;
+  height: 14rem;
+  bottom: 10%;
+  left: 20%;
+  background: radial-gradient(circle, var(--forest), transparent 70%);
+  opacity: 0.7;
+  animation: drift-1 24s ease-in-out infinite reverse;
+}
+
+@keyframes drift-1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(3rem, 2rem) scale(1.1); }
+}
+
+@keyframes drift-2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-2.5rem, -3rem) scale(1.05); }
+}
+
+@keyframes drift-3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-2rem, 2.5rem) scale(0.95); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-orb {
+    animation: none;
+  }
+}
+
 /* Allergy warnings must never rely on color alone: icon + text + border. */
 .allergen-warning {
   display: flex;
