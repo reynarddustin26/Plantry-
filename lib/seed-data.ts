@@ -1,5 +1,5 @@
 import type { DemoProfile, Product, Store } from './types';
-import { demoProfileSchema, productSchema } from './validation';
+import { demoProfileSchema, productSchema } from './validation.ts';
 
 // Demo Profile: the always-available, zero-network fallback (blueprint's single
 // most important reliability requirement).

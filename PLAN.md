@@ -547,3 +547,100 @@ This mirrors Phase 4's "documented limitation, not silently accepted" pattern.
   has not yet been run against the real project as a result. Applying the
   migration (via the Supabase SQL Editor, or by providing a DB connection
   string) is required before this phase's live RLS-isolation proof can run.
+
+---
+
+## Section G — Phase 6 Execution (Data Ingestion Pipeline)
+
+### What was built
+- `lib/providers/types.ts` — `RetailDataProvider`/`RecipeDataProvider`
+  interfaces (blueprint §5/§6) and the `Ingested*` shapes they return.
+  Deliberately independent of `lib/types.ts`'s frontend `Recipe`/`Product`
+  types — see the scope decision below.
+- `lib/providers/curatedRetailProvider.ts` — wraps the existing curated AU
+  pricing dataset (`lib/seed-data.ts`, sourced from
+  `data/pricing-worksheet.csv`) as a `RetailDataProvider`, grouping the 62
+  store-specific rows into 53 unique products (by name) each carrying a
+  `stores[]` array of per-store price/package-size.
+- `lib/providers/openFoodFactsNutrition.ts` — nutrition enrichment via Open
+  Food Facts. **Scope decision (ambiguity resolved, logged per tonight's
+  instructions):** the brief asked for "Open Food Facts + curated CSV
+  fallback," but none of the 62 curated rows carry a barcode (verified:
+  `awk` over the CSV's barcode column returns 0 non-empty rows), and Open
+  Food Facts has no reliable way to be a *primary* AU product-listing source
+  without one. Barcode lookup is the accurate way to use this API; without a
+  barcode the only option is a name search against a global, mostly
+  non-AU-branded database, which risks silently attaching a WRONG product's
+  nutrition — worse than the honest `null` already shown. So: curated CSV
+  stays the sole source of product listings, and Open Food Facts is used as
+  a nutrition *enrichment* pass, only accepting a name-search match when
+  every significant word of our product name appears in the candidate's
+  name (conservative, documented, rejects low-confidence matches rather than
+  guessing).
+- `lib/providers/theMealDbProvider.ts` — `RecipeDataProvider` against
+  TheMealDB's free tier (no registration/key required). Fetches a bounded
+  set (3 per category × 9 categories ≈ 27 recipes) across
+  Breakfast/Dessert/Starter/Side/Vegetarian/Vegan/Chicken/Seafood/Pasta.
+- `lib/providers/recipeMapping.ts` (+ `recipeMapping.test.ts`, 14 tests,
+  TDD) — the deterministic mapping/parsing logic feeding the above:
+  - `mapCourse`/`deriveTags`: TheMealDB category → our course/tag taxonomy,
+    with unmapped categories defaulting to `'main'` (a disclosed
+    categorisation default — unlike price/nutrition, "which course" has no
+    ground truth to fabricate).
+  - `parseMeasure`: TheMealDB's free-text measures ("1 cup", "to taste",
+    "200g") parsed into `{quantity, unit}` without ever inventing a numeric
+    amount the source didn't give — non-numeric text becomes `quantity: 1,
+    unit: "<the literal text>"` rather than a guessed number.
+  - `inferAllergensFromIngredients`: deterministic keyword match against
+    ingredient text, reusing the same controlled vocabulary as
+    `lib/allergens.ts`. Documented explicitly as a heuristic derived from
+    ingredient text, not a verified lab allergen statement — TheMealDB
+    provides no allergen data at all, and leaving allergens empty for a
+    recipe genuinely containing dairy/gluten would be actively dangerous
+    given this app's hard-gate allergen safety requirement.
+- `scripts/ingest.ts` — orchestrates both providers, writes `products` /
+  `store_products` / `recipes` / `recipe_ingredients` / `data_provenance`
+  (every row tagged with `source`, `captured_at`, `is_demo_data`) via the
+  service_role client. Runs a preflight check (`select` on `products`)
+  before writing anything, so a missing migration fails fast with one clear
+  message instead of 50+ repeated errors. `npm run ingest`.
+
+### Scope decision: frontend keeps reading local fixtures, not Supabase
+Populating Supabase's `products`/`recipes` tables is this phase's job;
+switching the live site to *read* from them is not. `lib/types.ts`'s
+`Product`/`Recipe` types, `lib/seed-data.ts`, `lib/recipes-data.ts`, and
+every screen built in Phases 2–4 are untouched. This keeps the well-tested
+shopping/cookbook/optimiser flow stable and avoids a much larger frontend
+data-layer rewrite tonight; it's the natural next step for a later phase.
+
+### Blocked: live population (see BLOCKED.md)
+`npm run ingest` was run against the real project: the preflight check
+correctly detects the migration hasn't been applied (`PGRST205: Could not
+find the table 'public.products'`) and aborts before writing anything —
+proving the script's failure path is honest, not that ingestion succeeded.
+Real product/recipe rows have not been written to Supabase. Once the
+migration lands (Phase 5's blocker), re-running `npm run ingest` will
+populate it for real — no code changes needed.
+
+### Incidental fix: Node can run these `.ts` files directly
+`scripts/ingest.ts` needed to import `lib/providers/*.ts` under plain
+`node` (Node 24 strips TS types natively — no new dependency installed,
+consistent with this session's standing rule to ask before adding
+dependencies). Node's ESM loader requires explicit file extensions on
+*runtime* relative imports (type-only `import type` lines are erased and
+don't need this). Added `"allowImportingTsExtensions": true` to
+`tsconfig.json` (safe/additive — permits `.ts` extensions, doesn't require
+them anywhere) and added `.ts` extensions to the handful of import lines on
+this module's actual runtime path
+(`lib/seed-data.ts` → `./validation.ts`, `curatedRetailProvider.ts` → `../seed-data.ts`,
+`theMealDbProvider.ts` → `./recipeMapping.ts`). No other import in the
+codebase was touched.
+
+### Gate status: code complete and tested; live population blocked
+- `npm run lint` ✓, `npm run build` ✓ (unchanged route count; provider/script
+  files type-check cleanly), `npm run test` ✓ (88/88 — 14 new for
+  `recipeMapping.ts`).
+- `curatedRetailProvider.fetchProducts()` smoke-tested directly: 53 unique
+  products correctly grouped from the 62-row CSV with per-store pricing intact.
+- `npm run ingest` smoke-tested against the real (unmigrated) project:
+  preflight correctly aborts with one clear message, zero writes attempted.
