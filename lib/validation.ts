@@ -28,6 +28,16 @@ export const demoProfileSchema = z
   })
   .strict();
 
+export const nutritionPer100gSchema = z
+  .object({
+    calories: z.number().nonnegative().nullable(),
+    protein: z.number().nonnegative().nullable(),
+    carbs: z.number().nonnegative().nullable(),
+    fat: z.number().nonnegative().nullable(),
+    fibre: z.number().nonnegative().nullable(),
+  })
+  .strict();
+
 export const productSchema = z
   .object({
     id: z.string(),
@@ -40,5 +50,13 @@ export const productSchema = z
     store: storeSchema,
     source: z.enum(['demo', 'curated', 'open_food_facts']),
     capturedAt: z.string(),
+    nutritionPer100g: nutritionPer100gSchema.nullable(),
+  })
+  .strict();
+
+export const cartItemSchema = z
+  .object({
+    productId: z.string(),
+    quantity: z.number().int().positive(),
   })
   .strict();

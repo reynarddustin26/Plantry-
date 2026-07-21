@@ -16,7 +16,14 @@
       "mcp__plugin_ecc_chrome-devtools__close_page",
       "Bash(npx tsc *)",
       "Bash(npm test *)",
-      "Bash(git add *)"
+      "Bash(npm run dev*)",
+      "Bash(git add *)",
+      "Bash(git commit *)",
+      "Bash(git status*)",
+      "Bash(git log*)",
+      "mcp__plugin_ecc_chrome-devtools__take_snapshot",
+      "mcp__plugin_ecc_chrome-devtools__hover",
+      "mcp__plugin_ecc_chrome-devtools__click"
     ]
   },
   "enabledMcpjsonServers": [

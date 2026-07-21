@@ -59,7 +59,7 @@ export default function StoreSelectionPage() {
         </Button>
         <Button
           disabled={preferredStores.length === 0}
-          onClick={() => router.push('/demo-profile')}
+          onClick={() => router.push('/shop')}
         >
           Continue to Shopping
         </Button>

@@ -1,3 +1,4 @@
+import type { ReactNode } from 'react';
 import type { Product } from '@/lib/types';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
@@ -8,9 +9,10 @@ import { ReasoningSlot } from './ReasoningSlot';
 interface ProductCardProps {
   product: Product;
   reason?: string;
+  actions?: ReactNode;
 }
 
-export function ProductCard({ product, reason }: ProductCardProps) {
+export function ProductCard({ product, reason, actions }: ProductCardProps) {
   return (
     <Card className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
@@ -27,6 +29,7 @@ export function ProductCard({ product, reason }: ProductCardProps) {
       </p>
       <AllergyWarning allergens={product.allergens} />
       <ReasoningSlot reason={reason} />
+      {actions}
     </Card>
   );
 }

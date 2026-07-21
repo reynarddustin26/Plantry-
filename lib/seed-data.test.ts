@@ -12,6 +12,19 @@ describe('seed data', () => {
     const withAllergens = SEED_PRODUCTS.filter((p) => p.allergens.length > 0);
     expect(withAllergens.length).toBeGreaterThan(0);
   });
+
+  it('loads the full curated catalog (62 rows from data/pricing-worksheet.csv)', () => {
+    expect(SEED_PRODUCTS.length).toBe(62);
+  });
+
+  it('has unique product ids', () => {
+    const ids = new Set(SEED_PRODUCTS.map((p) => p.id));
+    expect(ids.size).toBe(SEED_PRODUCTS.length);
+  });
+
+  it('never fabricates nutrition data — nutritionPer100g stays null until Phase 6', () => {
+    expect(SEED_PRODUCTS.every((p) => p.nutritionPer100g === null)).toBe(true);
+  });
 });
 
 describe('formatAud', () => {

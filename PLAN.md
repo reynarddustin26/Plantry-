@@ -122,6 +122,7 @@ RLS mandatory on every user-owned table (Phase 5 gate).
 | 6: Data Ingestion Pipeline | `RetailDataProvider`/`RecipeDataProvider` scripts against Open Food Facts, USDA, curated AU pricing (`data/pricing-worksheet.csv`), chosen recipe API | Supabase populated with provenance-tagged rows; site never calls these APIs live, only reads Supabase |
 | 7: Grounded AI Explanations | Server-only `/api/ai/explain`, schema-validated, timeout + deterministic fallback, rate-limited | App fully usable with `AI_API_KEY` removed; no unsupported factual claims in AI output |
 | 8: Polish, Reliability, Deploy | Responsive pass, failure matrix (blueprint §10), full acceptance checklist (§12), deploy to `*.vercel.app` | Full journey works end-to-end on live deploy in incognito; every failure-matrix case degrades gracefully |
+| 9: Bonus — PWA | Service worker, manifest, offline fallback — only after 1–8 are stable | Installable, works offline for cached data, zero regression in 1–8 |
 
 **Phase 8 design-polish note (from user feedback during Phase 1):** Phase 1's
 components are intentionally flat Tailwind defaults — visual polish is explicitly
@@ -132,7 +133,9 @@ states and micro-interactions (a single generic query returned only a weak
 `ui-ux-pro-max`'s `motion.csv`/`react-performance.csv` data for animation/motion
 guidance, not just static colors — in service of blueprint §4's "fun/goofy but
 professional" brand direction, which Phase 1's plain cards don't yet express.
-| 9: Bonus — PWA | Service worker, manifest, offline fallback — only after 1–8 are stable | Installable, works offline for cached data, zero regression in 1–8 |
+Note: some baseline hover/stagger/page-transition animation was already added
+during Phase 1 (Framer Motion, `lib/motion.ts`) per user request — Phase 8 is
+about the deeper visual-identity pass, not introducing motion from scratch.
 
 ### 7. Not in Scope / Backlog
 
@@ -240,3 +243,76 @@ before Phase 2.
   1 `min={0}` vs Zod `.positive()` mismatch on the constraints form) were fixed
   and gates re-verified green.
 - Demo Profile confirmed to render with zero network calls.
+
+---
+
+## Section C — Phase 2 Execution (Core Shopping Flow)
+
+### What was built
+- **Types/schemas**: `NutritionPer100g` (all-nullable — no nutrition columns
+  exist in the curated CSV; real values land via USDA in Phase 6, never
+  fabricated) and `CartItem` added to `lib/types.ts`/`lib/validation.ts`.
+- **Full catalog**: `lib/seed-data.ts` rewritten to transcribe all 62 rows of
+  `data/pricing-worksheet.csv` (was a 10-item hand-picked subset in Phase 1),
+  each validated via `productSchema.parse()`. `nutritionPer100g: null` for all.
+- **Business logic (TDD, tests written first)**: `lib/cart.ts`
+  (`getCartSummary` — line totals, item count, skips orphaned cart items) and
+  `lib/search.ts` (`filterProducts` — query/category/store/allergen-exclusion),
+  both with `lib/*.test.ts` covering them plus the expanded seed-data tests
+  (62-row count, unique ids, no fabricated nutrition).
+- **Persistent cart**: `store/cartStore.ts` uses Zustand `persist`
+  (localStorage key `plantry-cart`) with `skipHydration: true` +
+  `components/common/CartHydrator.tsx` (mounted in `app/layout.tsx`) calling
+  `persist.rehydrate()` post-mount, avoiding an SSR/client hydration mismatch.
+- **Screens**: `/shop` (search, category/store filter chips, 62-product grid,
+  add-to-cart, up to-3 compare selection — client component, no stagger
+  animation on the grid per `ui-ux-pro-max`'s own guidance against staggering
+  >8-10 items), `/shop/product/[id]` (async Server Component, `notFound()` on
+  miss), `/shop/compare` (async Server Component reading `searchParams`,
+  up to 3 products side by side), `/cart` (line items, qty +/- controls, live
+  AUD total, empty state).
+- **Nav**: Header gained Shop/Cart links (Cart shows a live item-count badge
+  via a small client sub-component, `CartBadgeLink`, keeping `Header` itself a
+  server component); store-selection's "Continue" now routes to `/shop`.
+- **E2E**: Playwright installed and configured (`playwright.config.ts`,
+  `npm run e2e`), one spec (`e2e/intent-to-cart.spec.ts`) covering the full
+  intent → constraints → store-selection → shop(search+add) → cart →
+  reload-persists journey, plus an allergy-warning accessibility check, across
+  Chromium/Firefox/WebKit.
+
+### Bugs caught and fixed during this phase
+- `components/ui/Card.tsx` used Framer Motion (`motion.div`/`motion.button`)
+  but was never marked `'use client'` — worked in Phase 1 only because every
+  page using it was already a client component. Broke when the new Server
+  Components (`/shop/product/[id]`, `/shop/compare`) imported it directly
+  (`createMotionComponent() from the server` runtime error). Fixed by adding
+  `'use client'` to Card.tsx — verified by both agent review and a clean
+  browser reload with no console errors.
+- Two E2E assertions were logically inert: `expect(locator).toBeTruthy()` on a
+  Playwright `Locator` (always truthy regardless of match count — doesn't
+  prove the element exists) and a `/bg-\w+/` class-regex check on the "Health"
+  intent card that matched an always-present base class (`bg-card`) whether or
+  not the click actually selected it. Both rewritten to assert on a resolved,
+  visible element / a class that's genuinely conditional on selection state.
+- `AddToCartButton`'s "Added ✓" state never reset, so a second click on the
+  same product gave no visual feedback. Fixed with a 2s `setTimeout` reset.
+- Header nav wrapped/overlapped at 375px once a third nav item (Cart) was
+  added — fixed with tighter gaps/padding and shortening "Demo Profile" to
+  "Profile" in the nav (the page itself is still titled "Demo Profile").
+- Cart line items truncated product names aggressively ("Chick...") at 375px
+  in a single-row layout — fixed by stacking name/controls vertically below
+  the `sm:` breakpoint instead of truncating.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (`/shop/compare` and
+  `/shop/product/[id]` correctly render as dynamic/server-rendered routes),
+  `npm run test` ✓ (16/16 unit tests), `npm run e2e` ✓ (6/6 — 2 tests ×
+  3 browsers).
+- Verified in a real browser at 375px across `/shop`, `/shop/product/[id]`,
+  `/shop/compare`, `/cart`; cart persistence confirmed via a genuine hard
+  reload with `localStorage` inspected directly (not just the E2E suite).
+- `code-reviewer` and `typescript-reviewer` agents both ran against the diff;
+  the one real finding (`AddToCartButton` state reset) was fixed.
+- Nutrition data is honestly absent (`null`) everywhere in this phase — no
+  cart/product screen fabricates calorie/macro numbers; UI copy says so
+  explicitly rather than hiding the gap.

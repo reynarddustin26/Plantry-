@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { CartBadgeLink } from './CartBadgeLink';
 
 export function Header() {
   return (
@@ -10,13 +11,20 @@ export function Header() {
         >
           🌱 Plantry
         </Link>
-        <nav className="flex items-center gap-4 text-sm font-medium">
+        <nav className="flex items-center gap-1 text-sm font-medium sm:gap-3">
+          <Link
+            href="/shop"
+            className="flex min-h-[44px] items-center rounded-lg px-1.5 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
+          >
+            Shop
+          </Link>
           <Link
             href="/demo-profile"
-            className="flex min-h-[44px] items-center rounded-lg px-2 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+            className="flex min-h-[44px] items-center rounded-lg px-1.5 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
           >
-            Demo Profile
+            Profile
           </Link>
+          <CartBadgeLink />
         </nav>
       </div>
     </header>
