@@ -1,16 +1,20 @@
 interface ReasoningSlotProps {
   reason?: string;
+  tone?: 'positive' | 'excluded';
 }
 
-// Placeholder slot for Phase 3's deterministic scoring explanations. Every
-// recommendation must show its reason, not just a bare score — this component
-// is the UI contract Phase 3 plugs into, so it's built before the logic exists.
-export function ReasoningSlot({ reason }: ReasoningSlotProps) {
+// Every recommendation shows its reason, not just a bare score (blueprint
+// §4). Phase 3's lib/scoring.ts plugs its deterministic explanations in here.
+// tone='excluded' is for the allergen hard-gate — text alone (not just color)
+// makes the exclusion explicit, per the "never rely on color alone" rule.
+export function ReasoningSlot({ reason, tone = 'positive' }: ReasoningSlotProps) {
   if (!reason) return null;
 
+  const isExcluded = tone === 'excluded';
+
   return (
-    <p className="text-xs text-muted-foreground">
-      <span aria-hidden="true">✓ </span>
+    <p className={isExcluded ? 'text-xs font-semibold text-danger-text' : 'text-xs text-muted-foreground'}>
+      <span aria-hidden="true">{isExcluded ? '✕ ' : '✓ '}</span>
       {reason}
     </p>
   );

@@ -116,8 +116,8 @@ RLS mandatory on every user-owned table (Phase 5 gate).
 |---|---|---|
 | 1: Foundation & Brand | Next.js/Tailwind scaffold, brand system, intent-first → constraints → store-selection screens, Demo Profile, local seed data only | `npm run build` green; home/constraints/store-selection/demo-profile navigable with zero network calls; usable at 375px; code-reviewer pass |
 | 2: Core Shopping Flow | Product/cart types, real seed dataset, search/filter/compare (3-way), persistent cart | E2E: intent → search → compare → cart totals correct; cart persists on refresh |
-| 3: Deterministic Intelligence | `lib/scoring.ts`, `lib/nutrition.ts`, `lib/allergens.ts`, `lib/optimisation.ts`, TDD, 80%+ coverage | Allergen-conflicted products hard-gated (never auto-recommended); unit price/protein-per-$ correct; all tests green |
-| 4: Cookbook & Optimiser | Full course/tag/method category system, ingredient matching, optimiser, savings dashboard | Recipe filters all functional; ≥1 optimiser swap with $ delta and reason; savings dashboard shows methodology, not a bare number |
+| 3: Deterministic Intelligence | `lib/scoring.ts`, `lib/nutrition.ts`, `lib/allergens.ts`, TDD, comparison explanations from calculated values | Allergen-conflicted products hard-gated (never auto-recommended); unit price/protein-per-$ correct; all tests green |
+| 4: Cookbook & Optimiser | Full course/tag/method category system, ingredient matching, `lib/optimisation.ts` basket optimiser, savings dashboard | Recipe filters all functional; ≥1 optimiser swap with $ delta and reason; savings dashboard shows methodology, not a bare number |
 | 5: Supabase Integration | Schema (§5 above), RLS, Supabase Auth email/password, Demo Profile fallback proven | Two test users' carts/pantry provably isolated (RLS); Demo Profile still works with Supabase env vars removed |
 | 6: Data Ingestion Pipeline | `RetailDataProvider`/`RecipeDataProvider` scripts against Open Food Facts, USDA, curated AU pricing (`data/pricing-worksheet.csv`), chosen recipe API | Supabase populated with provenance-tagged rows; site never calls these APIs live, only reads Supabase |
 | 7: Grounded AI Explanations | Server-only `/api/ai/explain`, schema-validated, timeout + deterministic fallback, rate-limited | App fully usable with `AI_API_KEY` removed; no unsupported factual claims in AI output |
@@ -316,3 +316,59 @@ before Phase 2.
 - Nutrition data is honestly absent (`null`) everywhere in this phase — no
   cart/product screen fabricates calorie/macro numbers; UI copy says so
   explicitly rather than hiding the gap.
+
+---
+
+## Section D — Phase 3 Execution (Deterministic Intelligence)
+
+### What was built
+- **`lib/nutrition.ts`** (TDD): `parsePackageSize` handles every real format in
+  the catalog (`500g`, `1kg`, `2L`, `375mL`, `4x95g`, `10x375mL`, `1 each`,
+  `25pk`), multipack patterns checked before plain-unit ones to avoid
+  mis-matching. `calculateUnitPrice` normalizes to $/100g, $/100mL, or
+  $/unit; `formatUnitPrice`; `proteinPerDollar` (derived from
+  `nutritionPer100g.protein` — returns `null`, never fabricated, since the
+  real catalog has no nutrition data yet).
+- **`lib/allergens.ts`** (TDD): `getAllergenConflicts`/`hasAllergenConflict` —
+  the single source of truth for matching a product's allergens against a
+  profile's declared allergies.
+- **`lib/scoring.ts`** (TDD): `isRecommendable` (the hard gate —
+  allergen-conflicted products are never recommendable, full stop),
+  `getRecommendationReason` (names the specific conflicting allergen and
+  states exclusion explicitly, or flags best-value; returns `undefined` for
+  unremarkable products rather than manufacturing filler text),
+  `findBestValueId` (cheapest $/100g among recommendable, weight-based
+  products only — allergen-conflicted products are filtered out before
+  comparison, so a cheaper conflicted item can never win).
+- **UI wiring**: `/shop` shows a unit-price line on every card, a "Best
+  value: $X/100g" badge on the single cheapest recommendable pick within the
+  current filtered results, and — for allergen-conflicted products — a bold
+  red "Contains X — excluded from your recommendations (allergy match)" line
+  via `ReasoningSlot`'s new `tone='excluded'` variant (icon + text + color,
+  never color alone). `/shop/product/[id]` and `/shop/compare` (both async
+  Server Components) get the same treatment via a new small client component,
+  `ProductRecommendationInfo`, since Server Components can't read the
+  client-side Zustand profile store directly.
+- Verified against the full real 62-product catalog in a live browser: every
+  dairy/tree-nut product (the Demo Profile's allergies) correctly shows the
+  exclusion message; gluten/soy/peanut products (not in this profile's
+  allergies) correctly do NOT get excluded; the "Best value" badge landed on
+  the true minimum ($0.24/100g, Home Brand Pasta) among non-conflicted
+  weight-based products.
+
+### Scope correction
+Fixed a documentation inconsistency in §6's phase table: `lib/optimisation.ts`
+had been listed under Phase 3, but the blueprint's own phase breakdown (and
+the master build prompt) puts the basket optimiser in Phase 4 ("Cookbook &
+Optimiser"), not Phase 3. Moved it there; Phase 3 built exactly what the
+blueprint's Phase 3 description calls for (scoring, unit price,
+protein-per-dollar, allergen gating, comparison explanations) and nothing more.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓, `npm run test` ✓ (51/51 unit tests —
+  35 new: 9 nutrition, 6 allergens, 8 scoring, plus updated seed-data checks),
+  `npm run e2e` ✓ (6/6 regression, unchanged from Phase 2).
+- `code-reviewer` and `typescript-reviewer` agents both reviewed with extra
+  scrutiny on the hard gate specifically (per blueprint: "never softened by
+  scoring or by the AI") — both independently confirmed no code path lets an
+  allergen-conflicted product appear as a recommendation; zero findings.

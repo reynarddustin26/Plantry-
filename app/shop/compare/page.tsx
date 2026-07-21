@@ -4,6 +4,7 @@ import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { AllergyWarning } from '@/components/common/AllergyWarning';
 import { AddToCartButton } from '@/components/common/AddToCartButton';
+import { ProductRecommendationInfo } from '@/components/common/ProductRecommendationInfo';
 
 export default async function ComparePage({
   searchParams,
@@ -44,10 +45,8 @@ export default async function ComparePage({
               <p className="text-lg font-bold text-primary">
                 {formatAud(product.priceAud)}
               </p>
-              <p className="text-xs text-muted-foreground">
-                Unit-price comparison and scoring lands in Phase 3.
-              </p>
               <AllergyWarning allergens={product.allergens} />
+              <ProductRecommendationInfo product={product} />
               <AddToCartButton productId={product.id} />
             </Card>
           ))}

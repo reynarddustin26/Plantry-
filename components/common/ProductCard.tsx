@@ -9,10 +9,18 @@ import { ReasoningSlot } from './ReasoningSlot';
 interface ProductCardProps {
   product: Product;
   reason?: string;
+  reasonTone?: 'positive' | 'excluded';
+  unitPriceLabel?: string;
   actions?: ReactNode;
 }
 
-export function ProductCard({ product, reason, actions }: ProductCardProps) {
+export function ProductCard({
+  product,
+  reason,
+  reasonTone,
+  unitPriceLabel,
+  actions,
+}: ProductCardProps) {
   return (
     <Card className="flex flex-col gap-2">
       <div className="flex items-start justify-between gap-2">
@@ -24,11 +32,16 @@ export function ProductCard({ product, reason, actions }: ProductCardProps) {
         </div>
         <Badge>{product.category}</Badge>
       </div>
-      <p className="text-lg font-bold text-primary">
-        {formatAud(product.priceAud)}
-      </p>
+      <div>
+        <p className="text-lg font-bold text-primary">
+          {formatAud(product.priceAud)}
+        </p>
+        {unitPriceLabel && (
+          <p className="text-xs text-muted-foreground">{unitPriceLabel}</p>
+        )}
+      </div>
       <AllergyWarning allergens={product.allergens} />
-      <ReasoningSlot reason={reason} />
+      <ReasoningSlot reason={reason} tone={reasonTone} />
       {actions}
     </Card>
   );

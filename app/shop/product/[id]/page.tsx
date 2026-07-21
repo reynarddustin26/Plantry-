@@ -6,6 +6,7 @@ import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { AllergyWarning } from '@/components/common/AllergyWarning';
 import { AddToCartButton } from '@/components/common/AddToCartButton';
+import { ProductRecommendationInfo } from '@/components/common/ProductRecommendationInfo';
 
 export default async function ProductDetailPage({
   params,
@@ -44,6 +45,7 @@ export default async function ProductDetailPage({
         </p>
 
         <AllergyWarning allergens={product.allergens} />
+        <ProductRecommendationInfo product={product} />
 
         {product.nutritionPer100g === null && (
           <p className="text-xs text-muted-foreground">

@@ -7,7 +7,11 @@ import { ProductCard } from '@/components/common/ProductCard';
 import { Button } from '@/components/ui/Button';
 import { SEED_PRODUCTS, CATEGORIES } from '@/lib/seed-data';
 import { filterProducts } from '@/lib/search';
+import { calculateUnitPrice, formatUnitPrice } from '@/lib/nutrition';
+import { hasAllergenConflict } from '@/lib/allergens';
+import { findBestValueId, getRecommendationReason } from '@/lib/scoring';
 import { useCartStore } from '@/store/cartStore';
+import { useProfileStore } from '@/store/profileStore';
 import type { Store } from '@/lib/types';
 
 const STORES: Store[] = ['Coles', 'Woolworths', 'IGA'];
@@ -16,6 +20,7 @@ const MAX_COMPARE = 3;
 export default function ShopPage() {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
+  const profile = useProfileStore((s) => s.profile);
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | undefined>();
   const [store, setStore] = useState<Store | undefined>();
@@ -24,6 +29,11 @@ export default function ShopPage() {
   const results = useMemo(
     () => filterProducts(SEED_PRODUCTS, { query, category, store }),
     [query, category, store],
+  );
+
+  const bestValueId = useMemo(
+    () => findBestValueId(results, profile),
+    [results, profile],
   );
 
   function toggleCompare(id: string) {
@@ -113,10 +123,16 @@ export default function ShopPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-        {results.map((product) => (
+        {results.map((product) => {
+          const isBestValue = product.id === bestValueId;
+          const conflict = hasAllergenConflict(product, profile.allergies);
+          return (
           <ProductCard
             key={product.id}
             product={product}
+            unitPriceLabel={formatUnitPrice(calculateUnitPrice(product))}
+            reason={getRecommendationReason(product, profile, { isBestValue })}
+            reasonTone={conflict ? 'excluded' : 'positive'}
             actions={
               <div className="flex items-center justify-between gap-2 pt-1">
                 <label className="flex min-h-[44px] items-center gap-2 text-sm">
@@ -150,7 +166,8 @@ export default function ShopPage() {
               </div>
             }
           />
-        ))}
+          );
+        })}
         {results.length === 0 && (
           <p className="col-span-full text-sm text-muted-foreground">
             No products match your filters.
