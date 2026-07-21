@@ -1,6 +1,7 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
@@ -8,6 +9,7 @@ import { ProductCard } from '@/components/common/ProductCard';
 import { useProfileStore } from '@/store/profileStore';
 import { formatAud } from '@/lib/utils';
 import { getSeedProducts } from '@/lib/seed-data';
+import { staggerContainer } from '@/lib/motion';
 
 export default function DemoProfilePage() {
   const router = useRouter();
@@ -69,11 +71,16 @@ export default function DemoProfilePage() {
 
       <div>
         <p className="mb-2 text-sm font-semibold">Sample products</p>
-        <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        >
           {sampleProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
-        </div>
+        </motion.div>
       </div>
 
       <div className="flex justify-start">

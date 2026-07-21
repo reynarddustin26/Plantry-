@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { SelectableCard } from '@/components/ui/Card';
 import { useProfileStore } from '@/store/profileStore';
+import { staggerContainer } from '@/lib/motion';
 import type { Intent } from '@/lib/types';
 
 const INTENTS: { id: Intent; label: string; description: string }[] = [
@@ -34,7 +36,12 @@ export default function Home() {
         </p>
       </div>
 
-      <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+      >
         {INTENTS.map((intent) => (
           <SelectableCard
             key={intent.id}
@@ -47,7 +54,7 @@ export default function Home() {
             </p>
           </SelectableCard>
         ))}
-      </div>
+      </motion.div>
 
       <div className="flex justify-end gap-3">
         <Button variant="ghost" onClick={() => router.push('/demo-profile')}>

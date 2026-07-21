@@ -1,8 +1,10 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { useProfileStore } from '@/store/profileStore';
+import { staggerContainer, staggerItem } from '@/lib/motion';
 
 const ALLERGEN_OPTIONS = [
   'dairy',
@@ -71,15 +73,24 @@ export default function ConstraintsPage() {
 
       <fieldset className="flex flex-col gap-2">
         <legend className="text-sm font-semibold">Allergies</legend>
-        <div className="flex flex-wrap gap-2">
+        <motion.div
+          initial="hidden"
+          animate="visible"
+          variants={staggerContainer}
+          className="flex flex-wrap gap-2"
+        >
           {ALLERGEN_OPTIONS.map((allergen) => {
             const selected = profile.allergies.includes(allergen);
             return (
-              <button
+              <motion.button
                 key={allergen}
                 type="button"
                 aria-pressed={selected}
                 onClick={() => toggleAllergen(allergen)}
+                variants={staggerItem}
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                transition={{ duration: 0.15, ease: 'easeOut' }}
                 className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
                   selected
                     ? 'border-danger bg-danger-bg text-danger-text'
@@ -87,10 +98,10 @@ export default function ConstraintsPage() {
                 }`}
               >
                 {allergen}
-              </button>
+              </motion.button>
             );
           })}
-        </div>
+        </motion.div>
       </fieldset>
 
       <div className="flex justify-between gap-3">

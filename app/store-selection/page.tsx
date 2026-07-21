@@ -1,9 +1,11 @@
 'use client';
 
 import { useRouter } from 'next/navigation';
+import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { SelectableCard } from '@/components/ui/Card';
 import { useProfileStore } from '@/store/profileStore';
+import { staggerContainer } from '@/lib/motion';
 import type { Store } from '@/lib/types';
 
 const STORES: Store[] = ['Coles', 'Woolworths', 'IGA'];
@@ -31,7 +33,12 @@ export default function StoreSelectionPage() {
         </p>
       </div>
 
-      <div className="flex flex-col gap-3">
+      <motion.div
+        initial="hidden"
+        animate="visible"
+        variants={staggerContainer}
+        className="flex flex-col gap-3"
+      >
         {STORES.map((store) => (
           <SelectableCard
             key={store}
@@ -41,7 +48,7 @@ export default function StoreSelectionPage() {
             <p className="font-semibold">{store}</p>
           </SelectableCard>
         ))}
-      </div>
+      </motion.div>
 
       <div className="flex justify-between gap-3">
         <Button
