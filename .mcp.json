@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "21st": {
+      "type": "http",
+      "url": "https://21st.dev/api/mcp",
+      "headers": {
+        "x-api-key": "21st_sk_339978190ad04cb949f43f7424ee125333866b14a6b2b6ba2b121ca473ad705e"
+      }
+    }
+  }
+}

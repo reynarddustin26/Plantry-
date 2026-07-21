@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Skill(update-config)",
+      "Skill(update-config:*)",
+      "Bash(npm run *)",
+      "Bash(disown)",
+      "Bash(curl -s -o /dev/null -w \"%{http_code}\\\\n\" http://localhost:3000/)",
+      "mcp__plugin_ecc_chrome-devtools__new_page",
+      "mcp__plugin_ecc_chrome-devtools__resize_page",
+      "mcp__plugin_ecc_chrome-devtools__take_screenshot",
+      "mcp__plugin_ecc_chrome-devtools__list_console_messages",
+      "mcp__plugin_ecc_chrome-devtools__evaluate_script",
+      "mcp__plugin_ecc_chrome-devtools__emulate",
+      "mcp__plugin_ecc_chrome-devtools__navigate_page",
+      "mcp__plugin_ecc_chrome-devtools__close_page",
+      "Bash(npx tsc *)",
+      "Bash(npm test *)",
+      "Bash(git add *)"
+    ]
+  },
+  "enabledMcpjsonServers": [
+    "21st"
+  ]
+}

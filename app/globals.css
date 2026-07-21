@@ -1,0 +1,57 @@
+@import "tailwindcss";
+
+/*
+  Plantry design tokens (Tailwind v4 CSS-first theme).
+  Palette validated against the ui-ux-pro-max "Grocery & Shopping List" preset
+  (primary #059669 / accent #D97706 / destructive #DC2626), adapted to a neutral
+  slate background so money/health data reads as precise and trustworthy rather
+  than themed. Red (--color-danger) is reserved strictly for allergy/safety
+  warnings and must never be reused for any other purpose.
+*/
+@theme {
+  --color-primary: #059669;
+  --color-primary-foreground: #ffffff;
+  --color-secondary: #10b981;
+  --color-secondary-foreground: #ffffff;
+  --color-accent: #d97706;
+  --color-accent-foreground: #ffffff;
+  --color-danger: #dc2626;
+  --color-danger-foreground: #ffffff;
+  --color-danger-bg: #fef2f2;
+  --color-danger-border: #dc2626;
+  --color-danger-text: #991b1b;
+
+  --color-background: #f8fafc;
+  --color-foreground: #0f172a;
+  --color-card: #ffffff;
+  --color-card-foreground: #0f172a;
+  --color-muted: #f0f8f6;
+  --color-muted-foreground: #64748b;
+  --color-border: #e2e8f0;
+  --color-ring: #059669;
+
+  --font-sans:
+    'Inter', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif;
+
+  --touch-min: 44px;
+}
+
+body {
+  background: var(--color-background);
+  color: var(--color-foreground);
+  font-family: var(--font-sans);
+}
+
+/* Allergy warnings must never rely on color alone: icon + text + border. */
+.allergen-warning {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1rem;
+  background: var(--color-danger-bg);
+  border: 1px solid var(--color-danger-border);
+  border-left-width: 4px;
+  border-radius: 0.5rem;
+  color: var(--color-danger-text);
+  font-weight: 600;
+}

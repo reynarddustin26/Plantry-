@@ -1,0 +1,63 @@
+store,product_name,brand,category,package_size,price_aud,unit_price_note,barcode,allergens,captured_at,notes
+Coles,Chicken Breast Fillets,,Protein,500g,8.50,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Woolworths,Chicken Breast Fillets,,Protein,500g,8.75,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Free Range Eggs 12pk,,Protein,700g,7.50,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Woolworths,Free Range Eggs 12pk,,Protein,700g,7.80,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Canned Tuna in Springwater,,Protein,4x95g,6.00,estimate,,,2026-07-21,
+Woolworths,Canned Tuna in Springwater,,Protein,4x95g,6.20,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Extra Firm Tofu,,Protein,300g,3.50,estimate,,soy,2026-07-21,
+IGA,Beef Mince 5 Star,,Protein,500g,7.00,estimate,,,2026-07-21,
+Woolworths,Greek Style Natural Yoghurt,,Protein,1kg,6.50,estimate,,dairy,2026-07-21,
+Coles,Canned Chickpeas,,Protein,400g,1.40,estimate,,,2026-07-21,
+Coles,Full Cream Milk,,Dairy,2L,3.60,ESTIMATE-VERIFY,,dairy,2026-07-21,comparison pair
+Woolworths,Full Cream Milk,,Dairy,2L,3.60,ESTIMATE-VERIFY,,dairy,2026-07-21,comparison pair
+Coles,Tasty Cheese Block,,Dairy,500g,7.50,estimate,,dairy,2026-07-21,
+Woolworths,Almond Milk Unsweetened,,Dairy,1L,3.00,estimate,,tree nut,2026-07-21,
+IGA,Salted Butter,,Dairy,250g,5.50,estimate,,dairy,2026-07-21,
+Coles,Vanilla Yoghurt Tub,,Dairy,1kg,6.00,estimate,,dairy,2026-07-21,
+Woolworths,Oat Milk,,Dairy,1L,3.20,estimate,,,2026-07-21,
+IGA,Shredded Mozzarella,,Dairy,250g,5.00,estimate,,dairy,2026-07-21,
+Coles,Basmati Rice,,Grains & Pantry,1kg,4.00,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Woolworths,Basmati Rice,,Grains & Pantry,1kg,4.20,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Rolled Oats,,Grains & Pantry,750g,3.50,estimate,,gluten,2026-07-21,
+Coles,Wholemeal Bread Loaf,,Grains & Pantry,700g,4.20,ESTIMATE-VERIFY,,gluten,2026-07-21,comparison pair
+Woolworths,Spaghetti Pasta,,Grains & Pantry,500g,1.80,estimate,,gluten,2026-07-21,
+IGA,Plain Flour,,Grains & Pantry,1kg,2.50,estimate,,gluten,2026-07-21,
+Coles,Quinoa,,Grains & Pantry,500g,6.50,estimate,,,2026-07-21,
+Woolworths,Wholemeal Bread Loaf,,Grains & Pantry,700g,4.30,ESTIMATE-VERIFY,,gluten,2026-07-21,comparison pair
+Coles,Bananas (per kg),,Produce,1kg,3.90,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Woolworths,Bananas (per kg),,Produce,1kg,4.00,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Baby Spinach,,Produce,120g,3.50,estimate,,,2026-07-21,
+Woolworths,Roma Tomatoes (per kg),,Produce,1kg,5.90,estimate,,,2026-07-21,
+IGA,Brushed Potatoes (per kg),,Produce,1kg,3.50,estimate,,,2026-07-21,
+Coles,Frozen Mixed Vegetables,,Produce,1kg,4.00,estimate,,,2026-07-21,
+Woolworths,Frozen Peas,,Produce,500g,3.00,estimate,,,2026-07-21,
+Coles,Avocado (each),,Produce,1 each,2.00,estimate,,,2026-07-21,
+Coles,Mixed Salted Nuts,,Snacks,200g,5.50,estimate,,tree nut,2026-07-21,allergen example
+Woolworths,Peanut Butter Smooth,,Snacks,375g,4.50,estimate,,peanut,2026-07-21,allergen example
+Coles,Rice Cakes,,Snacks,130g,2.80,estimate,,,2026-07-21,
+Woolworths,Protein Bar Box,,Snacks,5x60g,9.00,estimate,,tree nut,2026-07-21,
+IGA,Salted Crackers,,Snacks,250g,3.50,estimate,,gluten,2026-07-21,
+Coles,Hummus Dip,,Snacks,200g,3.00,estimate,,,2026-07-21,
+Woolworths,Trail Mix,,Snacks,300g,6.00,estimate,,tree nut,2026-07-21,allergen example
+Coles,Popcorn Lightly Salted,,Snacks,100g,2.50,estimate,,,2026-07-21,
+Coles,Chocolate Block,,Desserts,180g,5.00,estimate,,dairy,2026-07-21,
+Woolworths,Vanilla Ice Cream Tub,,Desserts,2L,7.00,estimate,,dairy,2026-07-21,
+IGA,Chocolate Chip Cookies,,Desserts,200g,4.00,estimate,,gluten,2026-07-21,
+Coles,Fruit Yoghurt Pouches,,Desserts,6x90g,5.50,estimate,,dairy,2026-07-21,
+Woolworths,Chocolate Mousse Cups,,Desserts,4x60g,4.50,estimate,,dairy,2026-07-21,
+Coles,Frozen Berries,,Desserts,500g,6.50,estimate,,,2026-07-21,
+Woolworths,Custard Tub,,Desserts,600g,4.00,estimate,,dairy,2026-07-21,
+Coles,Orange Juice,,Drinks,2L,5.00,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Woolworths,Orange Juice,,Drinks,2L,5.20,ESTIMATE-VERIFY,,,2026-07-21,comparison pair
+Coles,Sparkling Water 10pk,,Drinks,10x375mL,7.00,estimate,,,2026-07-21,
+IGA,Instant Coffee,,Drinks,200g,10.00,estimate,,,2026-07-21,
+Woolworths,Whey Protein Powder,,Drinks,1kg,45.00,estimate,,dairy,2026-07-21,
+Coles,Green Tea Bags,,Drinks,25pk,4.00,estimate,,,2026-07-21,
+Coles,2 Minute Noodles 5pk,,Budget/Student,5x85g,3.50,ESTIMATE-VERIFY,,gluten,2026-07-21,comparison pair
+Woolworths,2 Minute Noodles 5pk,,Budget/Student,5x85g,3.50,ESTIMATE-VERIFY,,gluten,2026-07-21,comparison pair
+Coles,Canned Baked Beans,,Budget/Student,420g,1.60,estimate,,,2026-07-21,
+Woolworths,Canned Tomato Soup,,Budget/Student,420g,1.80,estimate,,,2026-07-21,
+IGA,Home Brand White Bread,,Budget/Student,700g,2.00,estimate,,gluten,2026-07-21,
+Coles,Home Brand Pasta,,Budget/Student,500g,1.20,estimate,,gluten,2026-07-21,
+Coles,Instant Mashed Potato,,Budget/Student,200g,2.50,estimate,,,2026-07-21,
