@@ -11,16 +11,22 @@ export function Header() {
         >
           🌱 Plantry
         </Link>
-        <nav className="flex items-center gap-1 text-sm font-medium sm:gap-3">
+        <nav className="flex items-center gap-0.5 text-sm font-medium sm:gap-3">
           <Link
             href="/shop"
-            className="flex min-h-[44px] items-center rounded-lg px-1.5 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
+            className="flex min-h-[44px] items-center rounded-lg px-1 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
           >
             Shop
           </Link>
           <Link
+            href="/cookbook"
+            className="flex min-h-[44px] items-center rounded-lg px-1 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
+          >
+            Cookbook
+          </Link>
+          <Link
             href="/demo-profile"
-            className="flex min-h-[44px] items-center rounded-lg px-1.5 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
+            className="flex min-h-[44px] items-center rounded-lg px-1 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
           >
             Profile
           </Link>

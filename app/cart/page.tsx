@@ -95,6 +95,10 @@ export default function CartPage() {
         </p>
       </Card>
 
+      <Link href="/optimiser">
+        <Button variant="secondary">Optimise my basket</Button>
+      </Link>
+
       <Link href="/shop" className="text-sm text-muted-foreground hover:text-primary">
         ← Continue shopping
       </Link>

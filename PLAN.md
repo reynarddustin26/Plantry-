@@ -372,3 +372,92 @@ protein-per-dollar, allergen gating, comparison explanations) and nothing more.
   scrutiny on the hard gate specifically (per blueprint: "never softened by
   scoring or by the AI") — both independently confirmed no code path lets an
   allergen-conflicted product appear as a recommendation; zero findings.
+
+---
+
+## Section E — Phase 4 Execution (Cookbook & Optimiser)
+
+### What was built
+- **`lib/recipes-data.ts`**: 16 first-party curated recipes (blueprint §5 —
+  Phase 6 is where a real recipe API lands; there's no live integration yet).
+  Spans all 6 courses, 11 diet/tags, and all 4 static methods
+  (air_fryer/bbq/one_pot/quick). Ingredients link to real catalog `productId`s
+  wherever a sensible match exists, so ingredient-matching runs on real data;
+  common staples (salt, oil, garlic) are flagged `pantryStaple: true` and
+  assumed always on hand rather than forced into the catalog. `costPerServingAud`
+  is a grounded estimate from real ingredient prices, not an arbitrary number.
+  Tags like `high_protein`/`keto` are qualitative editorial categorisation —
+  every recipe detail page states plainly that per-serving numeric nutrition
+  isn't available yet, same honesty rule as products.
+- **`lib/recipeMatching.ts`** (TDD): ingredient-vs-cart matching
+  (`getIngredientMatchStatus`, `getMissingIngredients`, `getMatchSummary`) and
+  `filterRecipes` (course/tag/method/query, plus a `canMakeNow` filter computed
+  live against the cart). Blueprint §5 also lists `use_soon` ("pantry-match")
+  as a method filter — deliberately not implemented, since it needs pantry
+  expiry-date tracking that doesn't exist yet (Pantry mode is a Should-have,
+  not built); `can_make_now` is real and live, `use_soon` was left out rather
+  than faked.
+- **`lib/optimisation.ts`** (TDD): `findSwapCandidates` proposes same-category
+  swaps to a cheaper unit price, reusing Phase 3's `isRecommendable` hard gate
+  so a swap can never land on an allergen-conflicted product. Savings are
+  computed from the real price delta, always positive when a swap exists (unit
+  price strictly cheaper is required to propose one at all).
+  `calculateSavingsSummary` totals savings across all swaps, scaled by quantity.
+- **Screens**: `/cookbook` (search, course/tag/method filters, "Can make now"
+  toggle, recipe grid showing live cart-match counts), `/cookbook/recipes/[id]`
+  (async Server Component + a client `RecipeIngredientList` sub-component for
+  cart-aware ingredient checklist, mirroring the `ProductRecommendationInfo`
+  pattern from Phase 3), `/optimiser` (proposed swaps with "Apply swap",
+  explicit "no safe alternative found — kept" messaging per blueprint §10's
+  failure matrix), `/savings-dashboard` (current vs. optimised total, a written
+  methodology paragraph, per-item breakdown — not a bare number).
+- **Nav**: Header gained a "Cookbook" link (4th nav item); Cart page gained an
+  "Optimise my basket" entry point into `/optimiser`.
+
+### Bugs caught and fixed during this phase
+- `app/cookbook/page.tsx` originally used
+  `useCartStore((s) => s.items.map((i) => i.productId))` — a Zustand selector
+  that constructs a new array on every call. This breaks
+  `useSyncExternalStore`'s referential-stability requirement and threw "The
+  result of getServerSnapshot should be cached to avoid an infinite loop" in
+  the browser (not caught by lint/build/unit tests — only surfaced via actual
+  browser testing). Fixed by selecting `s.items` directly and mapping in the
+  component body; grepped the whole diff for the same pattern elsewhere
+  (none found), and both review agents independently re-verified.
+- A `react-hooks/preserve-manual-memoization` lint error (from the project's
+  React Compiler-aware ESLint rules) on manual `useMemo` wrapping
+  `findSwapCandidates` in `/optimiser` and `/savings-dashboard`. Fixed by
+  removing the manual memoization entirely rather than fighting the rule —
+  the computation is cheap (bounded by the 62-product catalog) and has no
+  side effects, so memoizing it was premature optimisation anyway.
+- A separate `react-hooks/use-memo` lint error in `/cookbook` from
+  `cartProductIds.join(',')` inside a `useMemo` dependency array (deps must be
+  simple expressions) — resolved the same way, by dropping the `useMemo`.
+- During manual browser testing, clicking the second product's "Add" button
+  appeared to silently do nothing (no console error, no state change). Root
+  cause: Next.js's dev-only floating "N" indicator was physically positioned
+  over that button at that scroll position, intercepting the synthetic click
+  — a testing-tool/dev-overlay artifact, not an application bug (confirmed by
+  clicking a button elsewhere on the page, and independently by the E2E suite,
+  which handles element-obscuring correctly and passes cleanly).
+
+### Known scope limitation (documented, not silently accepted)
+The optimiser compares candidates within the whole product `category` field
+(e.g. "Protein"), not a narrower sub-grouping — so it can propose swapping
+Chicken Breast Fillets for Canned Chickpeas (both cheaper-per-100g "Protein"
+items) rather than only same-product-different-store matches. This is
+mathematically correct, allergy-safe, and explained, but coarser than a real
+shopper might expect. Finer-grained "similar product" matching would need
+either a richer product taxonomy or Phase 6's real data sources — left as-is
+for Phase 4 rather than over-building a bespoke similarity model now.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (12 routes total), `npm run test` ✓
+  (74/74 — 17 new: 6 recipe-data integrity, 6 recipe matching/filtering,
+  5 optimisation), `npm run e2e` ✓ (6/6 regression, unchanged from Phase 2).
+- Verified in a real browser: cookbook filters (including live "Can make now"),
+  a real optimiser swap with correct savings math, and the savings dashboard's
+  methodology + per-item breakdown, all with zero console errors.
+- `code-reviewer` and `typescript-reviewer` agents both reviewed with specific
+  instructions to hunt for a second instance of the Zustand selector bug
+  across the whole diff — both confirmed none exists. Zero other findings.

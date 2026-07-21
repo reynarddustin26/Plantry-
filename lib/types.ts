@@ -50,3 +50,71 @@ export interface CartItem {
   productId: string;
   quantity: number;
 }
+
+export type RecipeCourse =
+  | 'breakfast'
+  | 'main'
+  | 'snack'
+  | 'dessert'
+  | 'drink'
+  | 'meal_prep';
+
+export type RecipeTag =
+  | 'vegan'
+  | 'vegetarian'
+  | 'gluten_free'
+  | 'dairy_free'
+  | 'keto'
+  | 'high_protein'
+  | 'low_calorie'
+  | 'budget'
+  | 'student'
+  | 'family'
+  | 'no_cook';
+
+// air_fryer/bbq/one_pot/quick are static recipe attributes. use_soon/
+// can_make_now are NOT stored on recipes — they're computed live against the
+// user's current cart (blueprint §5's "pantry-match" filters) since we have
+// no pantry/expiry tracking yet to compute "use_soon" honestly.
+export type RecipeMethod = 'air_fryer' | 'bbq' | 'one_pot' | 'quick';
+
+export interface RecipeIngredient {
+  name: string;
+  quantity: number;
+  unit: string;
+  // Links to a real Product in the catalog for cart-matching. Omitted for
+  // common pantry staples (salt, pepper, oil, water) that are assumed always
+  // on hand — see `pantryStaple`.
+  productId?: string;
+  pantryStaple?: boolean;
+}
+
+export interface RecipeSubstitution {
+  originalIngredient: string;
+  substitute: string;
+  reason?: string;
+}
+
+export interface Recipe {
+  id: string;
+  title: string;
+  course: RecipeCourse;
+  tags: RecipeTag[];
+  method: RecipeMethod[];
+  source: 'curated'; // real recipe-API sourcing lands in Phase 6
+  totalMinutes: number;
+  servings: number;
+  ingredients: RecipeIngredient[];
+  instructions: string[];
+  allergens: string[];
+  costPerServingAud: number;
+  storageNotes?: string;
+  substitutions?: RecipeSubstitution[];
+}
+
+export interface OptimiserSwap {
+  cartProductId: string;
+  suggestedProductId: string;
+  savingsAud: number;
+  reason: string;
+}

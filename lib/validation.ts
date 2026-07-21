@@ -60,3 +60,65 @@ export const cartItemSchema = z
     quantity: z.number().int().positive(),
   })
   .strict();
+
+export const recipeCourseSchema = z.enum([
+  'breakfast',
+  'main',
+  'snack',
+  'dessert',
+  'drink',
+  'meal_prep',
+]);
+
+export const recipeTagSchema = z.enum([
+  'vegan',
+  'vegetarian',
+  'gluten_free',
+  'dairy_free',
+  'keto',
+  'high_protein',
+  'low_calorie',
+  'budget',
+  'student',
+  'family',
+  'no_cook',
+]);
+
+export const recipeMethodSchema = z.enum(['air_fryer', 'bbq', 'one_pot', 'quick']);
+
+export const recipeIngredientSchema = z
+  .object({
+    name: z.string().min(1),
+    quantity: z.number().positive(),
+    unit: z.string().min(1),
+    productId: z.string().optional(),
+    pantryStaple: z.boolean().optional(),
+  })
+  .strict();
+
+export const recipeSubstitutionSchema = z
+  .object({
+    originalIngredient: z.string().min(1),
+    substitute: z.string().min(1),
+    reason: z.string().optional(),
+  })
+  .strict();
+
+export const recipeSchema = z
+  .object({
+    id: z.string(),
+    title: z.string().min(1),
+    course: recipeCourseSchema,
+    tags: z.array(recipeTagSchema),
+    method: z.array(recipeMethodSchema),
+    source: z.literal('curated'),
+    totalMinutes: z.number().positive(),
+    servings: z.number().int().positive(),
+    ingredients: z.array(recipeIngredientSchema).min(1),
+    instructions: z.array(z.string().min(1)).min(1),
+    allergens: z.array(z.string()),
+    costPerServingAud: z.number().positive(),
+    storageNotes: z.string().optional(),
+    substitutions: z.array(recipeSubstitutionSchema).optional(),
+  })
+  .strict();

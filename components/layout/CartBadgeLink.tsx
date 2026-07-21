@@ -12,7 +12,7 @@ export function CartBadgeLink() {
   return (
     <Link
       href="/cart"
-      className="flex min-h-[44px] items-center gap-1 rounded-lg px-1.5 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
+      className="flex min-h-[44px] items-center gap-1 rounded-lg px-1 text-foreground hover:text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:px-2"
     >
       Cart
       {itemCount > 0 && <Badge>{itemCount}</Badge>}
