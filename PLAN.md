@@ -644,3 +644,56 @@ codebase was touched.
   products correctly grouped from the 62-row CSV with per-store pricing intact.
 - `npm run ingest` smoke-tested against the real (unmigrated) project:
   preflight correctly aborts with one clear message, zero writes attempted.
+
+---
+
+## Section H — Phase 7 Execution (Grounded AI Explanations)
+
+### What was built
+- `app/api/ai/explain/route.ts` — server-only `POST` route. Parses + Zod-
+  validates the request, resolves a rate-limit key (authenticated user id if
+  signed in, else IP, else `'anonymous'`), enforces the limit, then either
+  calls the model (if `ANTHROPIC_API_KEY` is configured) or goes straight to
+  the deterministic fallback.
+- `lib/ai/explainSchemas.ts` — `explainRequestSchema` (a discriminated union
+  of exactly three fact shapes: `product_comparison`, `basket_swap`,
+  `savings_summary` — every field in each is already a deterministically
+  calculated value, e.g. `reason` strings from `lib/scoring.ts`/
+  `lib/optimisation.ts`) and `explainResponseSchema` (`{explanation,
+  grounded}`, `.strict()`, max 700 chars ≈ the brief's 120-word cap).
+- `lib/ai/anthropicClient.ts` — direct `fetch` call to Anthropic's Messages
+  API (no SDK dependency added — consistent with this session's standing
+  rule to ask before installing packages; the API is a plain REST call).
+  System prompt explicitly forbids stating any price/nutrition/allergen/
+  savings value not present in the supplied facts JSON, and forbids
+  inventing any missing fact. 15-second timeout via `AbortController`. On
+  invalid/unparseable output, retries once with a stricter "JSON only, no
+  markdown" prompt (blueprint §9), then gives up — never throws, always
+  returns `null` on any failure so the route falls back.
+- `lib/ai/fallbackExplanation.ts` (+ tests) — the deterministic fallback:
+  builds a plain-English explanation purely by relaying the already-grounded
+  `reason`/`savingsAud`/`swapCount` fields the caller supplied, via
+  `formatAud()` and template strings. No model call, so it's what actually
+  runs right now (no `ANTHROPIC_API_KEY` is configured in this environment).
+- `lib/ai/rateLimiter.ts` (+ tests) — in-memory fixed-window limiter, 20
+  requests/hour/key. Dependency-free by design: this deploys as a single
+  Next.js server process, not a multi-instance fleet, so a shared store
+  (Redis/Supabase) would solve a problem that doesn't exist yet — noted
+  in-code as the thing to revisit if that changes.
+
+### Gate status: complete, all green, live-smoke-tested
+- `npm run lint` ✓, `npm run build` ✓ (`/api/ai/explain` registered as a
+  dynamic route), `npm run test` ✓ (96/96 — 8 new: 5 rate-limiter, 3
+  fallback-explanation).
+- Live-tested against the running dev server (not just unit tests):
+  - A `basket_swap` request returns the correct relayed explanation with
+    `grounded: false` (proving the fallback path — the actually-live
+    behavior with no AI key configured).
+  - An invalid body (`facts.type: "bogus"`) returns `400` with a clear Zod
+    field-error breakdown.
+  - 22 consecutive requests from the same key: the first 20 return `200`,
+    the 21st and 22nd return `429` with a `Retry-After` header — confirms
+    the 20/hour limit is enforced exactly, not approximately.
+- Meets blueprint §9's core requirement directly: the app is fully usable
+  right now with `ANTHROPIC_API_KEY` absent, because that's the actual
+  current state, not a hypothetical one.
