@@ -17,7 +17,7 @@ export function Card({ children, className }: CardProps) {
       whileHover={cardHover}
       transition={cardHoverTransition}
       className={cn(
-        'rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm',
+        'rounded-lg border border-border bg-card p-4 text-card-foreground shadow-sm lg:p-6',
         className,
       )}
     >
@@ -49,7 +49,7 @@ export function SelectableCard({
       whileTap={cardTap}
       transition={cardHoverTransition}
       className={cn(
-        'min-h-[44px] w-full rounded-lg border-2 bg-card p-4 text-left text-card-foreground shadow-sm transition-colors',
+        'min-h-[44px] w-full rounded-lg border-2 bg-card p-4 text-left text-card-foreground shadow-sm transition-colors lg:p-6',
         'focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
         selected ? 'border-primary bg-muted' : 'border-border hover:border-primary/50',
         className,

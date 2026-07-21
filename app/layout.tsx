@@ -20,7 +20,7 @@ export default function RootLayout({
       <body className="flex min-h-screen flex-col">
         <CartHydrator />
         <Header />
-        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6">
+        <main className="mx-auto w-full max-w-2xl flex-1 px-4 py-6 lg:max-w-5xl lg:px-8 lg:py-10 xl:max-w-7xl">
           {children}
         </main>
         <Footer />

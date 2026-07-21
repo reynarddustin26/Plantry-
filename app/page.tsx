@@ -27,10 +27,10 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold">
+        <h1 className="text-2xl font-extrabold lg:text-4xl">
           What are you shopping for today?
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <p className="mt-1 text-sm text-muted-foreground lg:mt-3 lg:text-base">
           Tell Plantry your goal — it turns groceries into a basket, and a
           basket into meals.
         </p>
@@ -40,7 +40,7 @@ export default function Home() {
         initial="hidden"
         animate="visible"
         variants={staggerContainer}
-        className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+        className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
       >
         {INTENTS.map((intent) => (
           <SelectableCard

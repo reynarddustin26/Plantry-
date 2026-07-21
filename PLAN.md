@@ -461,3 +461,89 @@ for Phase 4 rather than over-building a bespoke similarity model now.
 - `code-reviewer` and `typescript-reviewer` agents both reviewed with specific
   instructions to hunt for a second instance of the Zustand selector bug
   across the whole diff — both confirmed none exists. Zero other findings.
+
+---
+
+## Section F — Phase 5 Execution (Supabase Integration)
+
+### What was built
+- `supabase/migrations/0001_init.sql` — 12 tables (`profiles`, `allergies`,
+  `profile_allergies`, `products`, `store_products`, `recipes`,
+  `recipe_ingredients`, `cart_items`, `pantry_items`, `saved_journeys`,
+  `recommendation_events`, `data_provenance`), RLS enabled on every table,
+  owner-scoped policies (`auth.uid() = user_id`) on every user-owned table,
+  public-read policies on every catalog table, a seeded controlled allergen
+  vocabulary matching the strings already used by `lib/allergens.ts`, and a
+  `handle_new_user()` trigger that auto-creates a `profiles` row on sign-up.
+- `lib/supabase/{config,client,server,middleware}.ts` + `proxy.ts` (repo
+  root — Next.js 16 renamed `middleware.ts` to `proxy.ts`; caught via the
+  bundled docs at `node_modules/next/dist/docs`, not assumed from training
+  data). Every Supabase call site is gated by `isSupabaseConfigured()` so the
+  app degrades to null/no-op with the env vars absent — verified by rebuilding
+  and running the Demo Profile flow with `.env.local` removed: zero console
+  errors, zero network calls, `/profile` and `/pantry` show a clear "use the
+  Demo Profile instead" fallback rather than crashing.
+- Auth: `/auth/signup`, `/auth/signin`, sign-out — Next.js Server Actions
+  (`lib/actions/auth.ts`) with Zod validation (`lib/auth-validation.ts`),
+  `useActionState` forms (`components/auth/AuthForm.tsx`).
+- `/profile` — view/edit profile + allergies for authenticated users
+  (`lib/actions/profile.ts`, `components/profile/ProfileForm.tsx`).
+- `/pantry` — minimal real CRUD pantry tracker (`lib/actions/pantry.ts`,
+  `components/pantry/PantryForm.tsx`). New feature, not previously in the app.
+- `scripts/verify-rls.mjs` (`npm run verify-rls`) — creates two disposable
+  real test users via the service_role admin API, seeds two dummy products,
+  writes `cart_items`/`pantry_items` as each user via their own session (not
+  service_role), then asserts each user only ever sees their own rows —
+  including when explicitly querying for the other user's `user_id`, which
+  proves Postgres RLS enforcement rather than incidental app-level filtering.
+  Cleans up all test data afterward.
+- Desktop responsive layout fix (user-reported mid-phase: the site rendered
+  as a narrow mobile-width column on desktop, not a real desktop layout).
+  Widened `app/layout.tsx`'s `<main>` and `Header`'s inner container with
+  `lg:max-w-5xl`/`xl:max-w-7xl` + more padding, added `lg:` grid/type-scale
+  variants to the opening/store-selection/demo-profile screens (4-up intent
+  grid, 3-up store grid, 4-up stat/product grids on desktop), and `lg:p-6` to
+  `Card`/`SelectableCard`. Verified with real DOM measurement, not just a
+  screenshot: `getBoundingClientRect()` at a 3127px-wide viewport showed a
+  1280px-wide centered content box with 923.6px left / 923.4px right margins.
+
+### Scope decision: live `/cart` UI stays on the local Zustand store for now
+`cart_items.product_id` is a NOT NULL foreign key to `products`, which stays
+empty until Phase 6's ingestion populates it with real UUIDs — the existing
+catalog (`lib/seed-data.ts`) uses string ids like `prod-coles-...`, not
+Supabase UUIDs. Wiring the live shopping cart through Supabase now would mean
+either fabricating fake product rows or leaving the FK unsatisfiable, so the
+well-tested Phase 2–4 cart flow (Zustand + localStorage) is left untouched
+through Phase 5. `cart_items`/`pantry_items` RLS isolation is proven directly
+at the database level via `verify-rls.mjs` instead of through the live UI.
+This mirrors Phase 4's "documented limitation, not silently accepted" pattern.
+
+### Bugs caught and fixed during review
+- `database-reviewer`: added missing indexes (`recipe_ingredients.product_id`,
+  `store_products.store`), added a missing `saved_journeys` UPDATE policy,
+  documented (rather than "fixed") that `profile_allergies`/`cart_items` don't
+  need separate `user_id` indexes since it's the leading column of their
+  composite primary key (btree leftmost-prefix matching already covers it).
+- `security-reviewer`: no exploitable findings.
+- `code-reviewer`/`typescript-reviewer`: fixed unsafe `supabase!` non-null
+  assertions in `lib/actions/auth.ts` (now checks `createClient()`'s return
+  directly); added missing error handling on `pantry.ts`'s delete and all
+  three of `profile.ts`'s writes (logged server-side, generic message
+  returned to the client — Postgres/PostgREST errors can contain
+  column/constraint names, unlike Supabase Auth's curated user-facing
+  strings); added explicit `.eq('user_id', ...)` filters as defense-in-depth
+  alongside RLS in `/pantry`; tightened `ProfileForm`'s loose `string` fields
+  to literal union types matching the DB check constraints.
+
+### Gate status: code complete, build/lint/test green; live RLS proof blocked
+- `npm run lint` ✓, `npm run build` ✓ (18 routes total, `Proxy (Middleware)`
+  correctly detected), `npm run test` ✓ (74/74, unchanged — no new unit-tested
+  business logic this phase, it's integration/infra).
+- **Blocked** (see `BLOCKED.md`): the migration has not been applied to the
+  real Supabase project (`profiles` table not found via a live service_role
+  query), and I have no DB connection string / Management API token to apply
+  it myself — only the anon/service_role keys and project URL, which can run
+  table CRUD but not DDL. `scripts/verify-rls.mjs` is finished and correct but
+  has not yet been run against the real project as a result. Applying the
+  migration (via the Supabase SQL Editor, or by providing a DB connection
+  string) is required before this phase's live RLS-isolation proof can run.

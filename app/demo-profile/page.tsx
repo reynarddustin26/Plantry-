@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
@@ -19,14 +20,14 @@ export default function DemoProfilePage() {
   return (
     <div className="flex flex-col gap-6">
       <div>
-        <h1 className="text-2xl font-extrabold">{profile.displayName}</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+        <h1 className="text-2xl font-extrabold lg:text-4xl">{profile.displayName}</h1>
+        <p className="mt-1 text-sm text-muted-foreground lg:mt-3 lg:text-base">
           This profile works entirely offline — no Supabase, no account, no
           network calls.
         </p>
       </div>
 
-      <Card className="grid grid-cols-2 gap-4">
+      <Card className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <div>
           <p className="text-xs text-muted-foreground">Weekly budget</p>
           <p className="font-semibold">{formatAud(profile.weeklyBudget)}</p>
@@ -75,13 +76,34 @@ export default function DemoProfilePage() {
           initial="hidden"
           animate="visible"
           variants={staggerContainer}
-          className="grid grid-cols-1 gap-3 sm:grid-cols-2"
+          className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 lg:gap-4"
         >
           {sampleProducts.map((product) => (
             <ProductCard key={product.id} product={product} />
           ))}
         </motion.div>
       </div>
+
+      <Card className="flex flex-col gap-3">
+        <div>
+          <p className="text-sm font-semibold">Want this to follow you across devices?</p>
+          <p className="text-xs text-muted-foreground">
+            An account saves your real profile and pantry to Plantry — the
+            Demo Profile above keeps working either way.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Link href="/auth/signup">
+            <Button variant="secondary">Create an account</Button>
+          </Link>
+          <Link href="/auth/signin">
+            <Button variant="ghost">Sign in</Button>
+          </Link>
+          <Link href="/pantry">
+            <Button variant="ghost">Pantry</Button>
+          </Link>
+        </div>
+      </Card>
 
       <div className="flex justify-start">
         <Button variant="ghost" onClick={() => router.push('/')}>

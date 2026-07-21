@@ -8,9 +8,12 @@
     "start": "next start",
     "lint": "eslint app components lib store",
     "test": "vitest run",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "verify-rls": "node --env-file=.env.local scripts/verify-rls.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.12.3",
+    "@supabase/supabase-js": "^2.110.7",
     "framer-motion": "^12.42.2",
     "next": "16.2.10",
     "react": "19.2.4",

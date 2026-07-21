@@ -177,7 +177,7 @@ export default function ShopPage() {
 
       {compareIds.length > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-40 border-t border-border bg-card p-4">
-          <div className="mx-auto flex max-w-2xl items-center justify-between">
+          <div className="mx-auto flex max-w-2xl items-center justify-between lg:max-w-5xl xl:max-w-7xl">
             <p className="text-sm font-semibold">
               {compareIds.length} selected to compare
             </p>

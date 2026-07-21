@@ -4,7 +4,7 @@ import { CartBadgeLink } from './CartBadgeLink';
 export function Header() {
   return (
     <header className="sticky top-0 z-50 border-b border-border bg-card">
-      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3">
+      <div className="mx-auto flex max-w-2xl items-center justify-between px-4 py-3 lg:max-w-5xl lg:px-8 xl:max-w-7xl">
         <Link
           href="/"
           className="flex min-h-[44px] items-center rounded-lg text-lg font-extrabold text-primary focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
