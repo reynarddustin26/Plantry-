@@ -10,7 +10,14 @@ export default async function SignInPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) redirect('/dashboard');
+    if (user) {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('display_name')
+        .eq('user_id', user.id)
+        .single();
+      redirect(profile?.display_name ? '/shop' : '/onboarding');
+    }
   }
 
   return (
@@ -24,8 +31,7 @@ export default async function SignInPage() {
 
       {!isSupabaseConfigured() && (
         <p className="rounded-lg border border-border bg-muted px-3 py-2 text-sm text-muted-foreground">
-          Accounts aren&apos;t configured in this environment — the Demo
-          Profile works fully without one.
+          Accounts aren&apos;t configured in this environment.
         </p>
       )}
 

@@ -1,22 +1,38 @@
-export type Store = 'Coles' | 'Woolworths' | 'IGA';
+export type Store = 'Coles' | 'Woolworths' | 'IGA' | 'ALDI';
 
 export type Intent = 'budget' | 'health' | 'quick' | 'convenience';
 
 export type ShoppingStrategy = 'balanced' | 'budget_first' | 'health_first';
 
-export interface DemoProfile {
-  id: string;
-  displayName: string;
-  weeklyBudget: number;
-  calorieTarget: number;
-  proteinTarget: number;
-  carbTarget: number;
-  fatTarget: number;
-  fibreTarget: number;
-  maxCookingMinutes: number;
-  defaultIntent: Intent;
+export type DietaryPreference = 'none' | 'vegetarian' | 'vegan' | 'keto' | 'gluten_free';
+
+// The real, account-backed profile — every field traces to a Supabase
+// `profiles` row (or auth.users for email/createdAt) for the signed-in
+// user. Nullable fields are genuinely unset, never defaulted to a fabricated
+// value; only `shoppingStrategy` is always present because it's derived
+// (see lib/hooks/useProfile.ts), not collected directly from the user.
+export interface UserProfile {
+  userId: string;
+  email: string;
+  displayName: string | null;
+  weeklyBudget: number | null;
+  proteinTarget: number | null;
+  maxCookingMinutes: number | null;
+  defaultIntent: Intent | null;
   shoppingStrategy: ShoppingStrategy;
+  dietaryPreferences: DietaryPreference[];
   allergies: string[];
+  preferredStores: Store[];
+  createdAt: string;
+}
+
+// The minimal shape lib/scoring.ts and lib/optimisation.ts actually read —
+// a UserProfile always satisfies this structurally. Lets signed-out call
+// sites (e.g. product pages before sign-in) pass an explicit "nothing
+// known about this visitor" profile instead of a null-check on every call.
+export interface ScoringProfile {
+  allergies: string[];
+  shoppingStrategy: ShoppingStrategy;
   preferredStores: Store[];
 }
 

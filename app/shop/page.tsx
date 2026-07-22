@@ -9,20 +9,18 @@ import { SEED_PRODUCTS, CATEGORIES } from '@/lib/seed-data';
 import { filterProducts } from '@/lib/search';
 import { calculateUnitPrice, formatUnitPrice } from '@/lib/nutrition';
 import { hasAllergenConflict } from '@/lib/allergens';
-import { findBestValueId, getRecommendationReason, rankByPersonalScore } from '@/lib/scoring';
-import { useAuthUser } from '@/lib/hooks/useAuthUser';
+import { ANONYMOUS_SCORING_PROFILE, findBestValueId, getRecommendationReason, rankByPersonalScore } from '@/lib/scoring';
 import { useCartStore } from '@/store/cartStore';
-import { useProfileStore } from '@/store/profileStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import type { Store } from '@/lib/types';
 
-const STORES: Store[] = ['Coles', 'Woolworths', 'IGA'];
+const STORES: Store[] = ['Coles', 'Woolworths', 'IGA', 'ALDI'];
 const MAX_COMPARE = 3;
 
 export default function ShopPage() {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
-  const profile = useProfileStore((s) => s.profile);
-  const user = useAuthUser();
+  const { profile } = useProfile();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | undefined>();
   const [store, setStore] = useState<Store | undefined>();
@@ -35,15 +33,15 @@ export default function ShopPage() {
 
   // Signed-in users get a real personalization signal (unit price + store
   // preference, per lib/scoring.ts — never fabricated nutrition scoring,
-  // see that file's comment on why). Signed-out/demo users see price order,
+  // see that file's comment on why). Signed-out users see price order,
   // which is at least a real, understandable default rather than CSV order.
   const results = useMemo(() => {
-    if (user) return rankByPersonalScore(filtered, profile);
+    if (profile) return rankByPersonalScore(filtered, profile);
     return [...filtered].sort((a, b) => a.priceAud - b.priceAud);
-  }, [filtered, profile, user]);
+  }, [filtered, profile]);
 
   const bestValueId = useMemo(
-    () => findBestValueId(results, profile),
+    () => findBestValueId(results, profile ?? ANONYMOUS_SCORING_PROFILE),
     [results, profile],
   );
 
@@ -75,12 +73,14 @@ export default function ShopPage() {
         </div>
       </div>
 
-      {user && (
+      {profile && (
         <p
           className="rounded-lg px-3 py-2 text-sm font-semibold"
           style={{ background: 'var(--surface-light)', color: 'var(--forest)' }}
         >
-          Sorted for your goals — best value in your preferred stores first.
+          {profile.displayName
+            ? `Showing results for ${profile.displayName}'s goals`
+            : 'Sorted for your goals — best value in your preferred stores first.'}
         </p>
       )}
 
@@ -162,13 +162,14 @@ export default function ShopPage() {
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
         {results.map((product) => {
           const isBestValue = product.id === bestValueId;
-          const conflict = hasAllergenConflict(product, profile.allergies);
+          const scoringProfile = profile ?? ANONYMOUS_SCORING_PROFILE;
+          const conflict = hasAllergenConflict(product, scoringProfile.allergies);
           return (
           <ProductCard
             key={product.id}
             product={product}
             unitPriceLabel={formatUnitPrice(calculateUnitPrice(product))}
-            reason={getRecommendationReason(product, profile, { isBestValue })}
+            reason={getRecommendationReason(product, scoringProfile, { isBestValue })}
             reasonTone={conflict ? 'excluded' : 'positive'}
             actions={
               <div className="flex items-center justify-between gap-2 pt-1">

@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 import { findBestValueId, getRecommendationReason, isRecommendable, rankByPersonalScore } from './scoring';
-import type { DemoProfile, Product } from './types';
+import type { Product, ScoringProfile } from './types';
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
   return {
@@ -18,17 +18,7 @@ function makeProduct(overrides: Partial<Product> = {}): Product {
   };
 }
 
-const profile: DemoProfile = {
-  id: 'demo-001',
-  displayName: 'Jamie',
-  weeklyBudget: 80,
-  calorieTarget: 2200,
-  proteinTarget: 150,
-  carbTarget: 275,
-  fatTarget: 73,
-  fibreTarget: 30,
-  maxCookingMinutes: 45,
-  defaultIntent: 'health',
+const profile: ScoringProfile = {
   shoppingStrategy: 'balanced',
   allergies: ['dairy', 'tree nut'],
   preferredStores: ['Coles', 'Woolworths'],

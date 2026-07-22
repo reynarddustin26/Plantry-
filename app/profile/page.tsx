@@ -1,27 +1,10 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
-import { signOut } from '@/lib/actions/auth';
-import { ProfileForm } from '@/components/profile/ProfileForm';
-import { ProfileProgress } from '@/components/profile/ProfileProgress';
-import { Button } from '@/components/ui/Button';
+import { ProfileEditor } from '@/components/profile/ProfileEditor';
 
 export default async function ProfilePage() {
   const supabase = await createClient();
-  if (!supabase) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <h1 className="text-2xl font-extrabold">Accounts unavailable</h1>
-        <p className="text-sm text-muted-foreground">
-          Supabase isn&apos;t configured in this environment. Use the Demo
-          Profile instead — it works fully offline.
-        </p>
-        <Link href="/demo-profile">
-          <Button>Go to Demo Profile</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (!supabase) redirect('/auth/signin');
 
   const {
     data: { user },
@@ -49,31 +32,13 @@ export default async function ProfilePage() {
     throw new Error(`Failed to load your allergy selections: ${profileAllergiesResult.error.message}`);
   }
 
-  const profile = profileResult.data;
-  const allergies = allergiesResult.data;
-  const profileAllergies = profileAllergiesResult.data;
-
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-extrabold">Your account</h1>
-          <p className="mt-1 text-sm text-muted-foreground">{user.email}</p>
-        </div>
-        <form action={signOut}>
-          <Button type="submit" variant="ghost">
-            Sign out
-          </Button>
-        </form>
-      </div>
-
-      <ProfileProgress weeklyBudget={profile.weekly_budget} proteinTarget={profile.protein_target} />
-
-      <ProfileForm
-        profile={profile}
-        allergies={allergies ?? []}
-        selectedAllergyIds={(profileAllergies ?? []).map((row) => row.allergy_id)}
-      />
-    </div>
+    <ProfileEditor
+      profile={profileResult.data}
+      email={user.email ?? ''}
+      createdAt={profileResult.data.created_at}
+      allergies={allergiesResult.data ?? []}
+      selectedAllergyIds={(profileAllergiesResult.data ?? []).map((row) => row.allergy_id)}
+    />
   );
 }

@@ -1,28 +1,19 @@
-import Link from 'next/link';
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { removePantryItem } from '@/lib/actions/pantry';
 import { PantryForm } from '@/components/pantry/PantryForm';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+
+const USE_SOON_DAYS = 5;
+
+function isUseSoon(addedAt: string): boolean {
+  const ageMs = Date.now() - new Date(addedAt).getTime();
+  return ageMs > USE_SOON_DAYS * 24 * 60 * 60 * 1000;
+}
 
 export default async function PantryPage() {
   const supabase = await createClient();
-  if (!supabase) {
-    return (
-      <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <h1 className="text-2xl font-extrabold">Pantry unavailable</h1>
-        <p className="text-sm text-muted-foreground">
-          Supabase isn&apos;t configured in this environment. Pantry tracking
-          needs an account — the Demo Profile and shop still work fully
-          offline.
-        </p>
-        <Link href="/demo-profile">
-          <Button>Go to Demo Profile</Button>
-        </Link>
-      </div>
-    );
-  }
+  if (!supabase) redirect('/auth/signin');
 
   const {
     data: { user },
@@ -49,16 +40,26 @@ export default async function PantryPage() {
       <div className="flex flex-col gap-2">
         {(items ?? []).map((item) => (
           <Card key={item.id} className="flex items-center justify-between">
-            <p className="text-sm">
-              <span className="font-semibold">{item.name}</span>
-              {item.quantity != null && (
-                <span className="text-muted-foreground">
-                  {' '}
-                  — {item.quantity}
-                  {item.unit ?? ''}
+            <div className="flex items-center gap-2">
+              <p className="text-sm">
+                <span className="font-semibold">{item.name}</span>
+                {item.quantity != null && (
+                  <span className="text-muted-foreground">
+                    {' '}
+                    — {item.quantity}
+                    {item.unit ?? ''}
+                  </span>
+                )}
+              </p>
+              {isUseSoon(item.added_at) && (
+                <span
+                  className="rounded-full px-2 py-0.5 text-xs font-semibold text-white"
+                  style={{ background: 'var(--amber)' }}
+                >
+                  Use soon
                 </span>
               )}
-            </p>
+            </div>
             <form action={removePantryItem.bind(null, item.id)}>
               <button
                 type="submit"

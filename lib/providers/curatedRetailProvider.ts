@@ -14,6 +14,14 @@ export const curatedRetailProvider: RetailDataProvider = {
     const byName = new Map<string, IngestedProduct>();
 
     for (const p of SEED_PRODUCTS) {
+      // lib/types.ts's Store union added 'ALDI' in Phase 10 (a real
+      // onboarding/profile store *preference*, not a catalog source) — no
+      // SEED_PRODUCTS row is actually store: 'ALDI', and this ingestion
+      // pipeline's own store_products.store DB check constraint (migration
+      // 0001) still only allows Coles/Woolworths/IGA, so this guard keeps
+      // that true rather than silently widening what gets ingested.
+      if (p.store === 'ALDI') continue;
+
       const existing = byName.get(p.name);
       if (existing) {
         existing.stores.push({ store: p.store, packageSize: p.packageSize, priceAud: p.priceAud });

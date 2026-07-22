@@ -3,12 +3,18 @@ import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartHydrator } from '@/components/common/CartHydrator';
+import { CartSupabaseSync } from '@/components/common/CartSupabaseSync';
 import { AIChat } from '@/components/chat/AIChat';
 
 export const metadata: Metadata = {
   title: 'Plantry',
   description:
     'Tell Plantry your budget and your goals — it turns groceries into a basket, and a basket into meals.',
+  icons: {
+    icon: '/favicon.svg',
+    shortcut: '/favicon.svg',
+    apple: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({
@@ -18,8 +24,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
+      <head>
+        <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+      </head>
       <body className="flex min-h-screen flex-col">
         <CartHydrator />
+        <CartSupabaseSync />
         <Header />
         {/* pt-[72px] compensates for the fixed header (removed from normal
             flow so it can float transparently over the homepage hero) —

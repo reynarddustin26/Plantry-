@@ -6,14 +6,90 @@ import { usePathname } from 'next/navigation';
 import { CartBadgeLink } from './CartBadgeLink';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
 import { cn } from '@/lib/utils';
+import { useProfile } from '@/lib/hooks/useProfile';
+import { signOut } from '@/lib/actions/auth';
 
 const NAV_LINKS = [
   { href: '/shop', label: 'Shop' },
   { href: '/cookbook', label: 'Cookbook' },
-  { href: '/demo-profile', label: 'Profile' },
+  { href: '/pantry', label: 'Pantry' },
 ];
 
 const SCROLL_THRESHOLD = 60;
+
+function initialsFor(displayName: string | null, email: string): string {
+  if (displayName?.trim()) {
+    return displayName
+      .trim()
+      .split(/\s+/)
+      .slice(0, 2)
+      .map((part) => part[0]!.toUpperCase())
+      .join('');
+  }
+  return email.charAt(0).toUpperCase();
+}
+
+function AccountMenu({ transparent }: { transparent: boolean }) {
+  const { profile } = useProfile();
+  const [open, setOpen] = useState(false);
+
+  if (!profile) {
+    return (
+      <Link
+        href="/auth/signin"
+        className={cn(
+          'flex min-h-[44px] items-center rounded-lg px-2 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring',
+          transparent ? 'text-white hover:text-[var(--mint-light)]' : 'text-foreground hover:text-primary',
+        )}
+      >
+        Sign in
+      </Link>
+    );
+  }
+
+  return (
+    <div className="relative">
+      <button
+        type="button"
+        onClick={() => setOpen((prev) => !prev)}
+        aria-label="Account menu"
+        aria-expanded={open}
+        className="flex h-9 w-9 items-center justify-center rounded-full text-sm font-bold text-white focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+        style={{ background: 'var(--emerald)' }}
+      >
+        {initialsFor(profile.displayName, profile.email)}
+      </button>
+
+      {open && (
+        <>
+          <button
+            type="button"
+            aria-label="Close menu"
+            className="fixed inset-0 z-40 cursor-default"
+            onClick={() => setOpen(false)}
+          />
+          <div className="absolute right-0 top-[calc(100%+8px)] z-50 flex w-44 flex-col overflow-hidden rounded-lg border border-border bg-card py-1 shadow-lg">
+            <Link
+              href="/profile"
+              onClick={() => setOpen(false)}
+              className="flex min-h-[44px] items-center px-3 text-sm text-foreground hover:bg-muted"
+            >
+              My Profile
+            </Link>
+            <form action={signOut}>
+              <button
+                type="submit"
+                className="flex min-h-[44px] w-full items-center px-3 text-left text-sm text-danger hover:bg-danger-bg"
+              >
+                Sign out
+              </button>
+            </form>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}
 
 export function Header() {
   const pathname = usePathname();
@@ -74,6 +150,7 @@ export function Header() {
             );
           })}
           <CartBadgeLink transparent={transparent} />
+          <AccountMenu transparent={transparent} />
         </nav>
       </div>
     </header>

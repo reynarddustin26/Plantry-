@@ -7,13 +7,14 @@ import { Badge } from '@/components/ui/Badge';
 interface RecipeCardProps {
   recipe: Recipe;
   matchSummary: { matched: number; total: number };
+  matchesGoals?: boolean;
 }
 
 function labelize(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
-export function RecipeCard({ recipe, matchSummary }: RecipeCardProps) {
+export function RecipeCard({ recipe, matchSummary, matchesGoals }: RecipeCardProps) {
   const allMatched = matchSummary.total > 0 && matchSummary.matched === matchSummary.total;
   const missingCount = matchSummary.total - matchSummary.matched;
 
@@ -33,6 +34,15 @@ export function RecipeCard({ recipe, matchSummary }: RecipeCardProps) {
           <p className="font-bold">{recipe.title}</p>
           <Badge>{labelize(recipe.course)}</Badge>
         </div>
+
+        {matchesGoals && (
+          <span
+            className="w-fit rounded-full px-2.5 py-1 text-xs font-semibold text-white"
+            style={{ background: 'var(--forest)' }}
+          >
+            Matches your goals
+          </span>
+        )}
 
         <p className="text-lg font-bold text-primary">
           {formatAud(recipe.costPerServingAud)}/serving

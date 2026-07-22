@@ -2,9 +2,10 @@
 
 import { useState } from 'react';
 import { useCartStore } from '@/store/cartStore';
-import { useProfileStore } from '@/store/profileStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { SEED_PRODUCTS, getProductById } from '@/lib/seed-data';
 import { findSwapCandidates } from '@/lib/optimisation';
+import { ANONYMOUS_SCORING_PROFILE } from '@/lib/scoring';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 
@@ -12,12 +13,12 @@ export function CartOptimiserPanel({ onClose }: { onClose: () => void }) {
   const items = useCartStore((s) => s.items);
   const removeItem = useCartStore((s) => s.removeItem);
   const setQuantity = useCartStore((s) => s.setQuantity);
-  const profile = useProfileStore((s) => s.profile);
+  const { profile } = useProfile();
 
   const [dismissed, setDismissed] = useState<Set<string>>(new Set());
   const [accepted, setAccepted] = useState<{ productId: string; savingsAud: number }[]>([]);
 
-  const swaps = findSwapCandidates(items, SEED_PRODUCTS, profile).filter(
+  const swaps = findSwapCandidates(items, SEED_PRODUCTS, profile ?? ANONYMOUS_SCORING_PROFILE).filter(
     (swap) => !dismissed.has(swap.cartProductId) && !accepted.some((a) => a.productId === swap.cartProductId),
   );
 

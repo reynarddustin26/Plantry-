@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
-import { useProfileStore } from '@/store/profileStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { hasAllergenConflict } from '@/lib/allergens';
 import { calculateUnitPrice, formatUnitPrice } from '@/lib/nutrition';
 import { getRecommendationReason } from '@/lib/scoring';
@@ -14,7 +14,7 @@ function cacheKey(productId: string): string {
 }
 
 export function ProductAiPanel({ product }: { product: Product }) {
-  const profile = useProfileStore((s) => s.profile);
+  const { profile } = useProfile();
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fullText, setFullText] = useState<string | null>(null);
   const [typedChars, setTypedChars] = useState(0);
@@ -23,10 +23,12 @@ export function ProductAiPanel({ product }: { product: Product }) {
 
   // Always real and always visible — the panel must never show empty while
   // waiting for a click. The AI (when it responds) elaborates on this same
-  // deterministic fact, it never replaces it.
+  // deterministic fact, it never replaces it. Signed-out visitors have no
+  // known allergies/strategy, so getRecommendationReason is skipped rather
+  // than fed a fabricated profile — the unit-price sentence is still real.
   const unitPrice = calculateUnitPrice(product);
   const deterministicReason =
-    getRecommendationReason(product, profile, { isBestValue: false }) ??
+    (profile ? getRecommendationReason(product, profile, { isBestValue: false }) : undefined) ??
     `${formatUnitPrice(unitPrice)} in ${product.category}.`;
 
   // Typewriter reveal of already-fetched text — this app's /api/ai/explain
@@ -55,7 +57,7 @@ export function ProductAiPanel({ product }: { product: Product }) {
     setStatus('loading');
     typedFromCache.current = false;
     try {
-      const conflict = hasAllergenConflict(product, profile.allergies);
+      const conflict = profile ? hasAllergenConflict(product, profile.allergies) : false;
 
       const res = await fetch('/api/ai/explain', {
         method: 'POST',
@@ -74,8 +76,8 @@ export function ProductAiPanel({ product }: { product: Product }) {
             ],
           },
           profile: {
-            shoppingStrategy: profile.shoppingStrategy,
-            weeklyBudget: profile.weeklyBudget,
+            shoppingStrategy: profile?.shoppingStrategy ?? 'balanced',
+            weeklyBudget: profile?.weeklyBudget ?? null,
           },
         }),
       });

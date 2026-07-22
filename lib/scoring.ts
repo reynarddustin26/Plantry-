@@ -1,10 +1,18 @@
 import { getAllergenConflicts, hasAllergenConflict } from './allergens';
 import { calculateUnitPrice, formatUnitPrice } from './nutrition';
-import type { DemoProfile, Product } from './types';
+import type { Product, ScoringProfile } from './types';
+
+// Signed-out visitors have no known allergies/strategy/store preference —
+// this is that honest "nothing known" state, not a fabricated persona.
+export const ANONYMOUS_SCORING_PROFILE: ScoringProfile = {
+  allergies: [],
+  shoppingStrategy: 'balanced',
+  preferredStores: [],
+};
 
 // The hard gate: allergen-conflicted products are never recommendable,
 // regardless of price or any other scoring factor. Never softened.
-export function isRecommendable(product: Product, profile: DemoProfile): boolean {
+export function isRecommendable(product: Product, profile: ScoringProfile): boolean {
   return !hasAllergenConflict(product, profile.allergies);
 }
 
@@ -16,7 +24,7 @@ interface ReasonOptions {
 // for unremarkable products rather than manufacturing filler text.
 export function getRecommendationReason(
   product: Product,
-  profile: DemoProfile,
+  profile: ScoringProfile,
   options: ReasonOptions = {},
 ): string | undefined {
   const conflicts = getAllergenConflicts(product, profile.allergies);
@@ -34,7 +42,7 @@ export function getRecommendationReason(
 
 // Cheapest per-100g product among recommendable (non-conflicting) products
 // with a weight-based unit price. Returns null if none qualify.
-export function findBestValueId(products: Product[], profile: DemoProfile): string | null {
+export function findBestValueId(products: Product[], profile: ScoringProfile): string | null {
   let bestId: string | null = null;
   let bestAmount = Infinity;
 
@@ -60,7 +68,7 @@ export function findBestValueId(products: Product[], profile: DemoProfile): stri
 // data that isn't there. It scores on what's actually real: unit price
 // (weighted harder under a budget-first strategy) and preferred-store
 // match, behind the same allergen hard gate as everything else.
-export function personalScore(product: Product, profile: DemoProfile): number {
+export function personalScore(product: Product, profile: ScoringProfile): number {
   if (!isRecommendable(product, profile)) return -Infinity;
 
   let score = 0;
@@ -78,6 +86,6 @@ export function personalScore(product: Product, profile: DemoProfile): number {
 
 // Highest personalScore first. Never surfaces an allergen-conflicted
 // product above a safe one (personalScore's hard gate sorts those last).
-export function rankByPersonalScore(products: Product[], profile: DemoProfile): Product[] {
+export function rankByPersonalScore(products: Product[], profile: ScoringProfile): Product[] {
   return [...products].sort((a, b) => personalScore(b, profile) - personalScore(a, profile));
 }

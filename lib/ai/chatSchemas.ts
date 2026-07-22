@@ -10,14 +10,19 @@ export const chatMessageSchema = z
 export const chatRequestSchema = z
   .object({
     messages: z.array(chatMessageSchema).min(1).max(20),
+    // Nullable/optional: signed-out visitors have no real profile, and this
+    // must never be filled with fabricated placeholder values just to
+    // satisfy the schema.
     userContext: z
       .object({
-        budget: z.number().positive(),
+        budget: z.number().positive().nullable(),
         allergens: z.array(z.string()),
-        proteinTarget: z.number().positive(),
+        proteinTarget: z.number().positive().nullable(),
         preferredStores: z.array(z.string()),
       })
-      .strict(),
+      .strict()
+      .nullable()
+      .optional(),
   })
   .strict();
 

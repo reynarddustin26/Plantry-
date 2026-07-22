@@ -1,25 +1,5 @@
-import type { DemoProfile, Product, Store } from './types';
-import { demoProfileSchema, productSchema } from './validation.ts';
-
-// Demo Profile: the always-available, zero-network fallback (blueprint's single
-// most important reliability requirement).
-const rawDemoProfile: DemoProfile = {
-  id: 'demo-001',
-  displayName: 'Jamie (Demo User)',
-  weeklyBudget: 80,
-  calorieTarget: 2200,
-  proteinTarget: 150,
-  carbTarget: 275,
-  fatTarget: 73,
-  fibreTarget: 30,
-  maxCookingMinutes: 45,
-  defaultIntent: 'health',
-  shoppingStrategy: 'balanced',
-  allergies: ['dairy', 'tree nut'],
-  preferredStores: ['Coles', 'Woolworths'],
-};
-
-export const DEMO_PROFILE: DemoProfile = demoProfileSchema.parse(rawDemoProfile);
+import type { Product, Store } from './types';
+import { productSchema } from './validation.ts';
 
 // The full curated AU pricing dataset (data/pricing-worksheet.csv, 62 rows —
 // blueprint §5's "curated, manually-verified AU pricing dataset"), transcribed

@@ -44,10 +44,36 @@ export function AuthForm({ mode, action }: AuthFormProps) {
           required
           className={inputClass}
         />
+        {isSignUp && (
+          <p className="text-xs text-muted-foreground">At least 8 characters.</p>
+        )}
         {state?.errors?.password && (
           <p className="text-xs text-danger-text">{state.errors.password[0]}</p>
         )}
       </label>
+
+      {isSignUp && (
+        <label className="flex flex-col gap-1">
+          <span className="text-sm font-semibold">Confirm password</span>
+          <input
+            id="confirmPassword"
+            name="confirmPassword"
+            type="password"
+            autoComplete="new-password"
+            required
+            className={inputClass}
+          />
+          {state?.errors?.confirmPassword && (
+            <p className="text-xs text-danger-text">{state.errors.confirmPassword[0]}</p>
+          )}
+        </label>
+      )}
+
+      {!isSignUp && (
+        <Link href="/auth/forgot-password" className="self-end text-xs font-semibold text-primary hover:underline">
+          Forgot password?
+        </Link>
+      )}
 
       {state?.message && (
         <p className="rounded-lg border border-danger bg-danger-bg px-3 py-2 text-sm text-danger-text">
@@ -67,14 +93,6 @@ export function AuthForm({ mode, action }: AuthFormProps) {
         >
           {isSignUp ? 'Sign in' : 'Sign up'}
         </Link>
-      </p>
-
-      <p className="text-center text-xs text-muted-foreground">
-        Prefer not to make an account?{' '}
-        <Link href="/demo-profile" className="font-semibold text-primary hover:underline">
-          Continue with the Demo Profile
-        </Link>{' '}
-        — it always works, no sign-in required.
       </p>
     </form>
   );

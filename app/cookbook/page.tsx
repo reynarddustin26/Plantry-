@@ -1,13 +1,23 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { RecipeCard } from '@/components/common/RecipeCard';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
 import { RECIPES } from '@/lib/recipes-data';
 import { filterRecipes, getMatchSummary } from '@/lib/recipeMatching';
 import { useCartStore } from '@/store/cartStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import type { RecipeCourse, RecipeMethod, RecipeTag } from '@/lib/types';
+
+// Only these 4 dietary preferences have a directly matching recipe tag —
+// 'none' intentionally has no entry (no auto-filter to apply).
+const DIETARY_TO_RECIPE_TAG: Record<string, RecipeTag> = {
+  vegetarian: 'vegetarian',
+  vegan: 'vegan',
+  keto: 'keto',
+  gluten_free: 'gluten_free',
+};
 
 const COURSES: RecipeCourse[] = ['breakfast', 'main', 'snack', 'dessert', 'drink', 'meal_prep'];
 const TAGS: RecipeTag[] = [
@@ -39,6 +49,7 @@ function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
 export default function CookbookPage() {
   const cartItems = useCartStore((s) => s.items);
   const cartProductIds = cartItems.map((i) => i.productId);
+  const { profile } = useProfile();
   const [query, setQuery] = useState('');
   const [course, setCourse] = useState<RecipeCourse | undefined>();
   // Multi-select, AND logic: a recipe must carry every selected tag/method
@@ -49,6 +60,23 @@ export default function CookbookPage() {
   const [tags, setTags] = useState<Set<RecipeTag>>(new Set());
   const [methods, setMethods] = useState<Set<RecipeMethod>>(new Set());
   const [canMakeNow, setCanMakeNow] = useState(false);
+
+  // Auto-applies the signed-in user's dietary preference as a tag filter
+  // once, on load — a ref (not state) tracks whether that's already
+  // happened so it never re-fires and stomps on a filter the user
+  // deliberately cleared afterward.
+  const appliedDietaryDefault = useRef(false);
+  useEffect(() => {
+    if (appliedDietaryDefault.current || !profile) return;
+    appliedDietaryDefault.current = true;
+    const preference = profile.dietaryPreferences[0];
+    const matchingTag = preference ? DIETARY_TO_RECIPE_TAG[preference] : undefined;
+    if (matchingTag) {
+      queueMicrotask(() => setTags((prev) => new Set(prev).add(matchingTag)));
+    }
+  }, [profile]);
+
+  const goalTags = new Set(profile?.dietaryPreferences.map((p) => DIETARY_TO_RECIPE_TAG[p]).filter(Boolean));
 
   const results = filterRecipes(RECIPES, {
     query,
@@ -125,7 +153,12 @@ export default function CookbookPage() {
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
         {results.map((recipe) => (
-          <RecipeCard key={recipe.id} recipe={recipe} matchSummary={getMatchSummary(recipe, cartProductIds)} />
+          <RecipeCard
+            key={recipe.id}
+            recipe={recipe}
+            matchSummary={getMatchSummary(recipe, cartProductIds)}
+            matchesGoals={goalTags.size > 0 && recipe.tags.some((t) => goalTags.has(t))}
+          />
         ))}
         {results.length === 0 && (
           <div className="col-span-full flex flex-col items-center gap-3 py-10 text-center">

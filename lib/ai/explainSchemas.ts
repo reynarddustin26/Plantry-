@@ -49,7 +49,9 @@ export const explainRequestSchema = z
     profile: z
       .object({
         shoppingStrategy: z.enum(['balanced', 'budget_first', 'health_first']),
-        weeklyBudget: z.number().positive(),
+        // Nullable: signed-out visitors have no real weekly budget to report,
+        // and this must never be fabricated to satisfy the schema.
+        weeklyBudget: z.number().positive().nullable(),
       })
       .strict(),
   })

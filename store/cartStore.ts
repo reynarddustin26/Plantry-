@@ -7,6 +7,7 @@ interface CartState {
   addItem: (productId: string) => void;
   removeItem: (productId: string) => void;
   setQuantity: (productId: string, quantity: number) => void;
+  setItems: (items: CartItem[]) => void;
   clear: () => void;
 }
 
@@ -41,6 +42,7 @@ export const useCartStore = create<CartState>()(
             ),
           };
         }),
+      setItems: (items) => set({ items }),
       clear: () => set({ items: [] }),
     }),
     // Rehydrated explicitly post-mount (see CartHydrator) to avoid an

@@ -16,17 +16,13 @@ export const profileFormSchema = z.object({
     .trim()
     .transform((v) => (v === '' ? null : v)),
   weeklyBudget: nullableNumber,
-  calorieTarget: nullableNumber,
   proteinTarget: nullableNumber,
-  carbTarget: nullableNumber,
-  fatTarget: nullableNumber,
-  fibreTarget: nullableNumber,
   maxCookingMinutes: nullableNumber,
   defaultIntent: z.enum(['budget', 'health', 'quick', 'convenience', '']).transform((v) =>
     v === '' ? null : v,
   ),
-  shoppingStrategy: z.enum(['balanced', 'budget_first', 'health_first']),
-  preferredStores: z.array(z.enum(['Coles', 'Woolworths', 'IGA'])),
+  dietaryPreference: z.enum(['none', 'vegetarian', 'vegan', 'keto', 'gluten_free']),
+  preferredStores: z.array(z.enum(['Coles', 'Woolworths', 'IGA', 'ALDI'])),
   allergyIds: z.array(z.string()),
 });
 

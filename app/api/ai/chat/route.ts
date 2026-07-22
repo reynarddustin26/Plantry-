@@ -81,9 +81,13 @@ export async function POST(request: NextRequest) {
   }
 
   const { messages, userContext } = validated.data;
-  const contextLine = `User context: budget $${userContext.budget}/week, allergens: ${
-    userContext.allergens.length > 0 ? userContext.allergens.join(', ') : 'none'
-  }, protein target: ${userContext.proteinTarget}g/day, shops at: ${userContext.preferredStores.join(', ')}`;
+  const contextLine = userContext
+    ? `User context: budget ${userContext.budget != null ? `$${userContext.budget}/week` : 'not set'}, allergens: ${
+        userContext.allergens.length > 0 ? userContext.allergens.join(', ') : 'none'
+      }, protein target: ${
+        userContext.proteinTarget != null ? `${userContext.proteinTarget}g/day` : 'not set'
+      }, shops at: ${userContext.preferredStores.length > 0 ? userContext.preferredStores.join(', ') : 'no preference set'}`
+    : 'User context: not signed in — no personal profile available.';
 
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);

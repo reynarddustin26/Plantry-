@@ -3,8 +3,8 @@
 import { useEffect, useRef, useState } from 'react';
 import { Card } from '@/components/ui/Card';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
-import { useProfileStore } from '@/store/profileStore';
-import { isRecommendable, getRecommendationReason } from '@/lib/scoring';
+import { useProfile } from '@/lib/hooks/useProfile';
+import { isRecommendable, getRecommendationReason, ANONYMOUS_SCORING_PROFILE } from '@/lib/scoring';
 import { hasAllergenConflict } from '@/lib/allergens';
 import { calculateUnitPrice, formatUnitPrice } from '@/lib/nutrition';
 import { formatAud } from '@/lib/utils';
@@ -33,14 +33,15 @@ function pickWinner(products: Product[], profile: Parameters<typeof isRecommenda
 }
 
 export function CompareAiVerdict({ products }: { products: Product[] }) {
-  const profile = useProfileStore((s) => s.profile);
+  const { profile } = useProfile();
+  const scoringProfile = profile ?? ANONYMOUS_SCORING_PROFILE;
   const [status, setStatus] = useState<'idle' | 'loading' | 'error'>('idle');
   const [fullText, setFullText] = useState<string | null>(null);
   const [typedChars, setTypedChars] = useState(0);
   const [grounded, setGrounded] = useState(false);
   const typedFromCache = useRef(false);
 
-  const winner = pickWinner(products, profile);
+  const winner = pickWinner(products, scoringProfile);
 
   useEffect(() => {
     if (!fullText || typedFromCache.current) return;
@@ -78,17 +79,17 @@ export function CompareAiVerdict({ products }: { products: Product[] }) {
                   name: product.name,
                   priceAud: product.priceAud,
                   unitPriceLabel: formatUnitPrice(unitPrice),
-                  allergenConflict: hasAllergenConflict(product, profile.allergies),
+                  allergenConflict: hasAllergenConflict(product, scoringProfile.allergies),
                   reason:
-                    getRecommendationReason(product, profile, {
+                    getRecommendationReason(product, scoringProfile, {
                       isBestValue: product.id === winner.id,
                     }) ?? `${formatUnitPrice(unitPrice) ?? formatAud(product.priceAud)} in ${product.category}.`,
                 };
               }),
             },
             profile: {
-              shoppingStrategy: profile.shoppingStrategy,
-              weeklyBudget: profile.weeklyBudget,
+              shoppingStrategy: scoringProfile.shoppingStrategy,
+              weeklyBudget: profile?.weeklyBudget ?? null,
             },
           }),
         });
@@ -125,7 +126,7 @@ export function CompareAiVerdict({ products }: { products: Product[] }) {
       )}
       {status === 'error' && (
         <p className="text-sm text-muted-foreground">
-          {getRecommendationReason(winner, profile, { isBestValue: true })}
+          {getRecommendationReason(winner, scoringProfile, { isBestValue: true })}
         </p>
       )}
       {fullText !== null && (
@@ -135,11 +136,13 @@ export function CompareAiVerdict({ products }: { products: Product[] }) {
         </p>
       )}
 
-      <p className="text-xs text-muted-foreground">
-        Based on your {formatAud(profile.weeklyBudget)}/week budget and{' '}
-        {profile.proteinTarget}g protein target.{' '}
-        {fullText !== null && (grounded ? 'Powered by Gemini.' : 'Deterministic explanation (AI unavailable).')}
-      </p>
+      {profile && (
+        <p className="text-xs text-muted-foreground">
+          Based on your {formatAud(profile.weeklyBudget ?? 0)}/week budget
+          {profile.proteinTarget != null && ` and ${profile.proteinTarget}g protein target`}.{' '}
+          {fullText !== null && (grounded ? 'Powered by Gemini.' : 'Deterministic explanation (AI unavailable).')}
+        </p>
+      )}
     </Card>
   );
 }

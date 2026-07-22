@@ -1,6 +1,6 @@
 import { isRecommendable } from './scoring';
 import { calculateUnitPrice, type UnitPrice } from './nutrition';
-import type { CartItem, DemoProfile, OptimiserSwap, Product } from './types';
+import type { CartItem, OptimiserSwap, Product, ScoringProfile } from './types';
 
 // Proposes at least one real, explainable swap per eligible cart item.
 // Allergen-conflicted candidates are filtered out via isRecommendable before
@@ -9,7 +9,7 @@ import type { CartItem, DemoProfile, OptimiserSwap, Product } from './types';
 export function findSwapCandidates(
   items: CartItem[],
   products: Product[],
-  profile: DemoProfile,
+  profile: ScoringProfile,
 ): OptimiserSwap[] {
   const productsById = new Map(products.map((p) => [p.id, p]));
   const swaps: OptimiserSwap[] = [];

@@ -1244,3 +1244,288 @@ section above). Both routes previously called the provider directly via
   `lib/`); the only surviving mentions are historical, in prior PLAN.md/
   BLOCKED.md phase logs, which document decisions made at the time and are
   intentionally not rewritten.
+
+## Live-site fixes: nutrition surfacing, product detail layout, Vercel toolbar
+
+Three fixes requested against the deployed site, two of which had premises
+that didn't match reality — verified against the live Supabase project and
+the actual repo before touching any code, per this session's standing
+practice.
+
+- **Vercel toolbar claim**: no `@vercel/analytics` or `@vercel/speed-insights`
+  package or import exists anywhere in this repo — confirmed by direct
+  grep. Nothing to remove. Did not add the requested
+  `next.config.ts` `experimental` block, since it isn't a real Next.js
+  config option; toolbar visibility is a Vercel-dashboard-level setting
+  outside this session's access.
+- **"product_nutrition table" claim**: no such table exists. What's real:
+  Phase 6's ingestion run had, at some point since the last check in this
+  session, actually populated the live Supabase `products` table (53 rows,
+  10 with real `nutrition_per_100g` from Open Food Facts/USDA) — verified
+  live via the service-role client. The app just never read it. Added
+  `lib/supabase/nutrition.ts`, which bridges the local seed catalog to
+  those rows by exact product **name** (the only link between the two
+  catalogs' different id schemes — local string slugs vs. Supabase's
+  generated uuids).
+- Product detail page (`app/shop/product/[id]/page.tsx`) rebuilt into a
+  two-column layout and now fetches + shows real nutrition via a new
+  `NutritionPanel` component; honest "Nutrition info not available" for
+  the ~43 products still null. Removed the raw "Sourced: curated ·
+  captured [date]" provenance line from user-facing UI. Compare page gets
+  the same per-product nutrition block.
+- Cart page gets a real `BasketNutritionSummary`: totals computed from
+  each line item's actual nutrition × parsed package weight (via the
+  existing `parsePackageSize`) × quantity — never a guess — with progress
+  bars against profile calorie/protein targets and an honest "some items
+  lack complete data" note when applicable.
+- `ProductAiPanel`'s "What Plantry thinks" now always shows the
+  deterministic recommendation reason immediately, never an empty panel
+  before the AI button is clicked.
+- Gate: `npm run lint` ✓, `npm run build` ✓, `npm run test` ✓ (108/108),
+  live-verified in browser with real nutrition numbers checked against
+  the actual ingested values (e.g. Chicken Breast Fillets: 70kcal/23.3g
+  protein per 100g, correctly scaled to 352kcal/117g for a 500g pack).
+
+## README rewrite for hackathon submission
+
+Replaced with the judge-facing structure requested, correcting two
+inaccuracies against the actual codebase rather than copying them
+verbatim: this is Next.js 16, not 14 (a load-bearing distinction per
+AGENTS.md's "not the Next.js you know" warning), and dropped
+`NEXT_PUBLIC_APP_URL` from the env var list since nothing in the app
+reads it.
+
+## Phase 10/11: real accounts, onboarding, profiles, personalisation, demo removal
+
+The largest single rewrite this session: replaced the entire local
+Zustand-backed Demo Profile system with real, account-backed
+personalisation throughout the app, per an explicit 10-part spec. Executed
+autonomously per the user's "no confirmation stops" instruction; every
+deviation from the literal spec below was a deliberate, documented call
+where following it exactly would have meant fabricating data, reinventing
+already-solid architecture, or leaving a real safety gap — consistent with
+this project's standing rules.
+
+### Foundational type/schema changes
+- `lib/types.ts`: `DemoProfile` → `UserProfile` (nullable fields matching
+  the real `profiles` table — `weeklyBudget`/`proteinTarget`/
+  `maxCookingMinutes`/`defaultIntent` are `number | null` /`Intent | null`,
+  never defaulted to a fabricated value). Dropped `calorieTarget`/
+  `carbTarget`/`fatTarget`/`fibreTarget` entirely — the new onboarding
+  never collects them, and the old Demo Profile's hardcoded values for
+  them were exactly the kind of fabrication this app exists to avoid.
+  Added `DietaryPreference` and a new `ScoringProfile` — the minimal
+  `{ allergies, shoppingStrategy, preferredStores }` shape
+  `lib/scoring.ts`/`lib/optimisation.ts` actually read, which
+  `UserProfile` satisfies structurally. Signed-out call sites pass the new
+  `ANONYMOUS_SCORING_PROFILE` (`lib/scoring.ts`) — an honest "nothing
+  known about this visitor" value, not a null-check scattered through
+  every consumer.
+- Added `'ALDI'` to the `Store` union (a store *preference*, not a
+  catalog source — no seed product is actually stocked at ALDI).
+- `lib/hooks/useProfile.ts` (new): the real replacement for
+  `store/profileStore.ts` (deleted). Client hook, fetches `profiles` +
+  joined `profile_allergies→allergies.name` for the signed-in user only;
+  returns `null` for signed-out visitors — never a demo fallback. Re-fetches
+  on every route-pathname change as well as auth-state changes, because
+  sign-in/out happen via Server Actions that mutate the session cookie
+  directly rather than through the browser Supabase client's own
+  signIn/signOut — its `onAuthStateChange` listener never fires for them,
+  which left a real bug where `Header`'s persistently-mounted account menu
+  stayed on stale signed-out state through the post-sign-in redirect until
+  a hard reload. Caught and fixed live during verification (see below).
+
+### Two migrations written but NOT applied (no DDL access this session)
+Same external blocker class as the AI-key issue earlier — this session
+has only the anon/service-role API keys, none of which can run DDL, and
+no Postgres connection string or Supabase Management API token.
+- `supabase/migrations/0002_profile_dietary_preferences.sql` — adds
+  `profiles.dietary_preferences text[]`. Until applied,
+  `lib/actions/onboarding.ts` and `lib/actions/profile.ts` try the update
+  with it, catch the resulting `42703 undefined_column`, and silently
+  retry without it — every other field (display name, budget, protein
+  target, cooking time, goal, stores, allergies) always saves correctly;
+  only the dietary preference itself doesn't persist yet. Verified live:
+  a fully-completed onboarding correctly saved everything except
+  `dietary_preferences`, with no error surfaced to the user.
+- `supabase/migrations/0003_cart_pantry_local_product_ids.sql` — relaxes
+  `cart_items.product_id`/`pantry_items.product_id` from `uuid references
+  products(id)` to plain `text`. The app's catalog is still
+  `lib/seed-data.ts`'s stable string ids; the real ingested `products`
+  rows use generated uuids with no shared key. `lib/actions/cart.ts`
+  degrades gracefully (logs, returns false, cart stays localStorage-only)
+  until this runs. **Pantry sidesteps this migration entirely**: since
+  `pantry_items.product_id` is nullable, `lib/actions/pantry.ts` just
+  leaves it null and stores the real product name directly — a fully
+  working, non-degraded feature today, no migration required.
+
+### Part 1 — Favicon
+`app/favicon.svg` + `public/favicon.svg` (exact brand mascot SVG), removed
+the old `app/favicon.ico`, added `metadata.icons` and an explicit
+`<link rel="icon">` in `app/layout.tsx`'s `<head>`.
+
+### Part 2 — Demo system removed
+Deleted: `app/demo-profile/`, `app/onboarding/constraints/`,
+`app/onboarding/setup/`, `app/store-selection/`, `app/dashboard/`,
+`app/savings-dashboard/`, `app/optimiser/`, `components/dashboard/`,
+`components/onboarding/OnboardingWizard.tsx` (old), `store/profileStore.ts`,
+`components/profile/ProfileForm.tsx` (old). The dashboard/savings-dashboard/
+optimiser/store-selection cluster was only ever linked to itself and to
+the old auth redirects — not reachable from Header nav or any core page —
+so removing it left nothing orphaned. `lib/seed-data.ts`'s `DEMO_PROFILE`
+export deleted along with its `demoProfileSchema`.
+
+### Part 3 — Real onboarding (`app/onboarding/page.tsx`, protected)
+3-step wizard (`components/onboarding/OnboardingWizard.tsx`, new),
+single `<form>` with all fields mounted throughout (hidden on
+inactive steps) so one final submit carries everything via
+`lib/actions/onboarding.ts`'s `saveOnboarding`. Deviated from the literal
+spec in one place: **rendered all 10 real controlled-vocabulary allergens**
+(dairy/gluten/peanut/soy/tree nut/egg/fish/shellfish/sesame/lupin) instead
+of the spec's abbreviated 6-item list — the local catalog has real soy and
+sesame allergens (e.g. Extra Firm Tofu), and offering fewer options than
+the app can actually detect would have created a real safety gap, directly
+contradicting this project's hard-gate-allergen rule. The 4 "primary goal"
+options map onto the pre-existing 4-value `Intent` enum
+(budget/health/quick/convenience) — "Eat healthier" borrows `convenience`
+since there's no 5th slot; documented inline since it's an imperfect but
+harmless fit (only feeds the derived shopping strategy, which already
+treats quick/convenience identically).
+
+### Part 4 — Real profile page (`app/profile/page.tsx` + `ProfileEditor.tsx`)
+Avatar-initials circle, editable display name, Goals/Dietary & allergens/
+Preferred stores/Account sections, autosave (debounced `requestSubmit()`
+on the same server-validated form `lib/actions/profile.ts`'s
+`updateProfile` already used) with a "Saved ✓" toast — no separate Save
+button. Change password triggers a real `resetPasswordForEmail` (never
+reveals whether the account exists). Delete account required a real
+design decision: implemented via a new `lib/supabase/admin.ts`
+service-role client, but only ever passed the user id already verified by
+the normal session-bound client moments earlier — never a client-supplied
+id — with a typed "DELETE" confirmation enforced server-side too.
+
+### Part 5 — Auth flow
+Sign-up gets confirm-password + inline "at least 8 characters" +
+`signUpFormSchema`'s password-match refinement. Sign-in gets a real
+"Forgot password?" link (`app/auth/forgot-password/page.tsx`, new). Both
+redirect based on real `profiles.display_name`: null → `/onboarding`, set
+→ `/shop` — never `/dashboard` (deleted). All "Demo Profile" copy removed
+from both pages and `AuthForm.tsx`.
+
+### Part 6 — Route protection
+Corrected "add middleware.ts" to this repo's actual Next.js 16 convention
+(`proxy.ts`, already established and commented in this codebase from an
+earlier phase — Next 16 renamed `middleware.ts`). Added the protection
+logic to `lib/supabase/middleware.ts`'s existing `updateSession` (which
+`proxy.ts` already calls for session-cookie refresh): `/profile`,
+`/onboarding`, `/pantry` redirect signed-out visitors to `/auth/signin`;
+everything else stays public.
+
+### Part 7 — Personalisation
+`Header.tsx`: avatar-initials circle + dropdown (My Profile/Sign out) when
+signed in, a plain "Sign in" link otherwise; added `/pantry` to nav.
+Shop page: real profile via `useProfile()`, "Showing results for
+[name]'s goals" banner, allergen blocking and `rankByPersonalScore`
+against the real profile (or `ANONYMOUS_SCORING_PROFILE` when signed out —
+never demo data). Cookbook: auto-applies the profile's dietary preference
+as a tag filter once on load (a ref guards against re-firing over a
+manually-cleared filter), "Matches your goals" badge on fitting recipes.
+Cart: real budget bar ("X% of your $Y weekly budget").
+
+### Part 8 — Cart Supabase sync (`lib/actions/cart.ts`, `CartSupabaseSync.tsx`)
+Signed-out: unchanged, localStorage-only. Signed-in: debounced push of
+the whole cart to `cart_items` on every change; the signed-out→signed-in
+transition fetches the existing Supabase cart and merges quantities
+(summed, not overwritten) with whatever was already in localStorage.
+Degrades to local-only (see migration 0003 above) until that migration
+runs — confirmed no user-facing error, just a console log.
+
+### Part 9 — Pantry (`app/pantry/page.tsx`, protected — already existed,
+upgraded rather than rebuilt)
+`PantryForm.tsx` upgraded from a plain text input to a real
+`<datalist>`-backed search-and-select against the local catalog's product
+names (still allows a free-text item not in the catalog). Added the "Use
+soon" amber badge (`added_at` > 5 days ago). Removed the old "Demo
+Profile" fallback copy. As noted above, this feature needed no migration
+at all — `product_id` stays null, real product name is stored directly.
+
+### Part 10 — Hero
+Re-verified rendering correctly as the first element on `/` (desktop and
+signed-in states) after all the Header/landing changes above — no rebuild
+needed. Hero's CTA is now dynamic: signed-in shows "Go to my basket →"
+(`/shop`); signed-out shows "Get started free" + "Sign in", with the old
+"No account needed to try" claim corrected to "No credit card required to
+sign up" — the old claim became false the moment accounts became required
+for the personalised experience.
+
+### Bugs found and fixed during this phase
+- **Stale Header auth state after sign-in** (real, user-facing): described
+  above under `useProfile.ts` — fixed by adding `usePathname()` to that
+  hook's effect dependencies, since every sign-in/out/onboarding-complete
+  action redirects to a different route.
+- **react-hooks/set-state-in-effect** (4 occurrences, same class as prior
+  phases): `useProfile.ts`'s not-configured branch fixed by seeding
+  `loading`'s initial state from `isSupabaseConfigured()` instead of
+  flipping it to false inside the effect; `app/cookbook/page.tsx` and
+  `ProfileEditor.tsx`'s synchronous setState-in-effect calls wrapped in
+  `queueMicrotask(...)`, matching this codebase's established fix pattern.
+- Dropped import accidentally lost during an edit to `app/shop/page.tsx`
+  (`useProfile` import line got overwritten by a later edit to the same
+  region) — caught immediately by `npm run build`'s TypeScript check.
+- `lib/providers/curatedRetailProvider.ts` (Phase 6's offline ingestion
+  pipeline, independent of the frontend's types by design) failed to
+  compile against the widened `Store` union — fixed with an explicit
+  `p.store === 'ALDI'` guard rather than widening the ingestion pipeline's
+  own type, since its `store_products.store` DB check constraint
+  genuinely still only allows Coles/Woolworths/IGA.
+- Test fixtures: `lib/scoring.test.ts`/`lib/optimisation.test.ts` updated
+  from `DemoProfile` literals to the new `ScoringProfile` shape;
+  `lib/seed-data.test.ts` lost its `DEMO_PROFILE` assertion;
+  `e2e/intent-to-cart.spec.ts` rewritten — its first test walked through
+  the now-deleted intent-selector → `/onboarding/constraints` →
+  `/store-selection` flow, replaced with the equivalent signed-out
+  shop-search → cart → reload-persistence journey (real personalisation
+  now requires a real account, which this suite doesn't create).
+
+### Live verification (Chrome DevTools MCP, real Supabase project)
+Existing person-identifiable test accounts were discovered mid-verification
+(real emails, already confirmed, pre-dating this session) — left
+untouched; created a fresh disposable account via the service-role admin
+API instead (bypasses Supabase's email-send rate limit, which blocked a
+real signup attempt through the UI), ran it through the full loop, and
+deleted it again afterward:
+1. Sign-up → (rate-limited by Supabase's own email-send limit; substituted
+   an admin-created equivalent) → `/onboarding` (no `display_name` yet).
+2. Completed all 3 onboarding steps (name, $80 budget, "protein/calorie
+   targets" goal, dairy allergen, vegan preference, cooking time, Coles +
+   Woolworths, 120g protein target) → redirected to `/shop`.
+3. Shop correctly showed "Showing results for [name]'s goals" and
+   hard-blocked every dairy product with the real allergy-match reason.
+4. `/profile` showed every field exactly as saved (confirmed the one
+   documented gap: dietary preference read back as "No restrictions"
+   since that column doesn't exist yet — matches the migration-0002 note
+   above exactly, verified against the raw DB row via the service-role
+   client).
+5. Cart budget bar showed "12% of your $80.00 weekly budget" for a
+   $9.70 basket — correct arithmetic against the real saved budget.
+6. Sign out → landing reverts to signed-out state (no "demo" text
+   anywhere on any page checked this session). Sign back in with the
+   now-complete profile → straight to `/shop`, skipping onboarding —
+   confirmed on a real client-side (soft) navigation, which is what
+   originally exposed the stale-Header bug above.
+7. Favicon `<link>` confirmed pointing at `/favicon.svg`.
+8. AI chat and product-page "Ask AI" both returned real Gemini responses
+   (already covered extensively in the provider-switch section above; not
+   re-litigated here beyond confirming no regression).
+
+### Gate status: complete, two documented external blockers
+- `npm run lint` ✓, `npm run build` ✓ (15 routes now — 20 minus the 6
+  deleted demo/dashboard pages plus the 1 new `/auth/forgot-password`),
+  `npm run test` ✓ (107/107 — one fewer than before, the removed
+  `DEMO_PROFILE` assertion), `npm run e2e` ✓ (6/6; one webkit run flaked
+  under parallel load and passed clean in isolation, not a regression).
+- Known, unfixable-by-code blockers, both documented above with exact
+  degradation behavior: `dietary_preferences` doesn't persist yet
+  (migration 0002) and Supabase cart sync stays local-only (migration
+  0003) — both require the user to run the migration file already sitting
+  in `supabase/migrations/`, same category as the earlier AI-key blocker.

@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { SEED_PRODUCTS } from '@/lib/seed-data';
 import { getCartSummary } from '@/lib/cart';
 import { formatAud } from '@/lib/utils';
@@ -15,8 +16,13 @@ export default function CartPage() {
   const items = useCartStore((s) => s.items);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
+  const { profile } = useProfile();
   const summary = getCartSummary(items, SEED_PRODUCTS);
   const [showOptimiser, setShowOptimiser] = useState(false);
+  const budgetPercent =
+    profile?.weeklyBudget && profile.weeklyBudget > 0
+      ? Math.round((summary.totalPriceAud / profile.weeklyBudget) * 100)
+      : null;
 
   if (summary.lineItems.length === 0) {
     return (
@@ -101,6 +107,26 @@ export default function CartPage() {
           {formatAud(summary.totalPriceAud)}
         </p>
       </Card>
+
+      {budgetPercent != null && profile?.weeklyBudget && (
+        <Card className="flex flex-col gap-2">
+          <div className="flex items-center justify-between text-sm">
+            <span className="text-muted-foreground">Weekly budget</span>
+            <span className="font-bold">
+              {budgetPercent}% of your {formatAud(profile.weeklyBudget)} weekly budget
+            </span>
+          </div>
+          <div className="h-2 w-full overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full transition-[width]"
+              style={{
+                width: `${Math.min(budgetPercent, 100)}%`,
+                background: budgetPercent > 150 ? 'var(--color-danger)' : budgetPercent > 100 ? 'var(--amber)' : 'var(--emerald)',
+              }}
+            />
+          </div>
+        </Card>
+      )}
 
       <BasketNutritionSummary lineItems={summary.lineItems} />
 

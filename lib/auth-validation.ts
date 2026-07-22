@@ -5,11 +5,21 @@ export const authFormSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters.'),
 });
 
+export const signUpFormSchema = authFormSchema
+  .extend({
+    confirmPassword: z.string(),
+  })
+  .refine((data) => data.password === data.confirmPassword, {
+    message: 'Passwords do not match.',
+    path: ['confirmPassword'],
+  });
+
 export type AuthFormState =
   | {
       errors?: {
         email?: string[];
         password?: string[];
+        confirmPassword?: string[];
       };
       message?: string;
     }

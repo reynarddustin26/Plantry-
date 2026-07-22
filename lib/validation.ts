@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export const storeSchema = z.enum(['Coles', 'Woolworths', 'IGA']);
+export const storeSchema = z.enum(['Coles', 'Woolworths', 'IGA', 'ALDI']);
 
 export const intentSchema = z.enum(['budget', 'health', 'quick', 'convenience']);
 
@@ -10,21 +10,28 @@ export const shoppingStrategySchema = z.enum([
   'health_first',
 ]);
 
-export const demoProfileSchema = z
+export const dietaryPreferenceSchema = z.enum([
+  'none',
+  'vegetarian',
+  'vegan',
+  'keto',
+  'gluten_free',
+]);
+
+export const userProfileSchema = z
   .object({
-    id: z.string(),
-    displayName: z.string().min(1),
-    weeklyBudget: z.number().positive(),
-    calorieTarget: z.number().positive(),
-    proteinTarget: z.number().positive(),
-    carbTarget: z.number().positive(),
-    fatTarget: z.number().positive(),
-    fibreTarget: z.number().positive(),
-    maxCookingMinutes: z.number().positive(),
-    defaultIntent: intentSchema,
+    userId: z.string(),
+    email: z.string().email(),
+    displayName: z.string().min(1).nullable(),
+    weeklyBudget: z.number().positive().nullable(),
+    proteinTarget: z.number().positive().nullable(),
+    maxCookingMinutes: z.number().positive().nullable(),
+    defaultIntent: intentSchema.nullable(),
     shoppingStrategy: shoppingStrategySchema,
+    dietaryPreferences: z.array(dietaryPreferenceSchema),
     allergies: z.array(z.string()),
     preferredStores: z.array(storeSchema),
+    createdAt: z.string(),
   })
   .strict();
 

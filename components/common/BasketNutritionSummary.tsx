@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { fetchNutritionByNames } from '@/lib/supabase/nutrition';
 import { parsePackageSize } from '@/lib/nutrition';
-import { useProfileStore } from '@/store/profileStore';
+import { useProfile } from '@/lib/hooks/useProfile';
 import { Card } from '@/components/ui/Card';
 import type { CartLineItem } from '@/lib/cart';
 
@@ -51,7 +51,7 @@ function ProgressBar({ label, value, unit, target }: { label: string; value: num
 // Line items with no matching nutrition data (or a non-weight package size,
 // e.g. "12pk") are excluded from the sum and flagged via `incomplete`.
 export function BasketNutritionSummary({ lineItems }: { lineItems: CartLineItem[] }) {
-  const profile = useProfileStore((s) => s.profile);
+  const { profile } = useProfile();
   const [totals, setTotals] = useState<Totals | null>(null);
 
   useEffect(() => {
@@ -96,8 +96,8 @@ export function BasketNutritionSummary({ lineItems }: { lineItems: CartLineItem[
 
   if (!totals) return null;
 
-  const calorieTarget = profile.calorieTarget || DEFAULT_CALORIE_TARGET;
-  const proteinTarget = profile.proteinTarget || DEFAULT_PROTEIN_TARGET;
+  const calorieTarget = DEFAULT_CALORIE_TARGET;
+  const proteinTarget = profile?.proteinTarget || DEFAULT_PROTEIN_TARGET;
 
   return (
     <Card className="flex flex-col gap-3">
