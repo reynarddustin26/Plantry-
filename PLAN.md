@@ -616,14 +616,23 @@ every screen built in Phases 2–4 are untouched. This keeps the well-tested
 shopping/cookbook/optimiser flow stable and avoids a much larger frontend
 data-layer rewrite tonight; it's the natural next step for a later phase.
 
-### Blocked: live population (see BLOCKED.md)
-`npm run ingest` was run against the real project: the preflight check
-correctly detects the migration hasn't been applied (`PGRST205: Could not
-find the table 'public.products'`) and aborts before writing anything —
-proving the script's failure path is honest, not that ingestion succeeded.
-Real product/recipe rows have not been written to Supabase. Once the
-migration lands (Phase 5's blocker), re-running `npm run ingest` will
-populate it for real — no code changes needed.
+### Live population: complete
+Once the migration was applied (Phase 5), `npm run ingest` was re-run for
+real against the live project with no code changes needed:
+- **Products**: 53/53 inserted, 62 `store_products` rows (matching the
+  53-unique-product/62-store-row shape from the smoke test), 10 nutrition-
+  enriched via Open Food Facts out of 53 (the other 43 honestly stayed
+  `null` — the conservative name-match rejected low-confidence candidates,
+  exactly as designed, rather than force-matching all 53).
+- **Recipes**: 27/27 inserted from TheMealDB, 256 `recipe_ingredients` rows,
+  with real deterministic allergen inference visible in the data (e.g. a
+  breakfast dish containing egg was correctly tagged `["dairy", "egg"]`) and
+  `total_minutes`/`servings`/`cost_per_serving` correctly `null` throughout
+  (TheMealDB provides none of these — never fabricated).
+- **Provenance**: 90 rows total (63 for products = 53 curated + 10 OFF
+  enrichment, 27 for recipes) — matches the insert counts exactly.
+- Spot-checked directly against the live database (not just the script's
+  own summary output) to confirm the data is real and correctly shaped.
 
 ### Incidental fix: Node can run these `.ts` files directly
 `scripts/ingest.ts` needed to import `lib/providers/*.ts` under plain
@@ -639,14 +648,14 @@ this module's actual runtime path
 `theMealDbProvider.ts` → `./recipeMapping.ts`). No other import in the
 codebase was touched.
 
-### Gate status: code complete and tested; live population blocked
+### Gate status: complete — Supabase populated for real, verified live
 - `npm run lint` ✓, `npm run build` ✓ (unchanged route count; provider/script
   files type-check cleanly), `npm run test` ✓ (88/88 — 14 new for
   `recipeMapping.ts`).
 - `curatedRetailProvider.fetchProducts()` smoke-tested directly: 53 unique
   products correctly grouped from the 62-row CSV with per-store pricing intact.
-- `npm run ingest` smoke-tested against the real (unmigrated) project:
-  preflight correctly aborts with one clear message, zero writes attempted.
+- `npm run ingest` run for real against the live project — see "Live
+  population: complete" above. This phase's gate is now fully closed.
 
 ---
 
