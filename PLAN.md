@@ -535,18 +535,21 @@ This mirrors Phase 4's "documented limitation, not silently accepted" pattern.
   alongside RLS in `/pantry`; tightened `ProfileForm`'s loose `string` fields
   to literal union types matching the DB check constraints.
 
-### Gate status: code complete, build/lint/test green; live RLS proof blocked
+### Gate status: complete — live RLS isolation proven against the real project
 - `npm run lint` ✓, `npm run build` ✓ (18 routes total, `Proxy (Middleware)`
   correctly detected), `npm run test` ✓ (74/74, unchanged — no new unit-tested
   business logic this phase, it's integration/infra).
-- **Blocked** (see `BLOCKED.md`): the migration has not been applied to the
-  real Supabase project (`profiles` table not found via a live service_role
-  query), and I have no DB connection string / Management API token to apply
-  it myself — only the anon/service_role keys and project URL, which can run
-  table CRUD but not DDL. `scripts/verify-rls.mjs` is finished and correct but
-  has not yet been run against the real project as a result. Applying the
-  migration (via the Supabase SQL Editor, or by providing a DB connection
-  string) is required before this phase's live RLS-isolation proof can run.
+- **Update**: the migration was applied via the Supabase SQL Editor. Verified
+  live: all 12 tables reachable, `allergies` carries its 10 seeded rows.
+  `npm run verify-rls` was then run for real against the live project — all
+  12 checks passed: two disposable real test users, each able to write their
+  own `cart_items`/`pantry_items`, each seeing only their own rows on an
+  unfiltered select, each getting zero rows back when explicitly querying the
+  *other* user's `user_id` (proving Postgres RLS enforcement, not incidental
+  app-level filtering), a cross-user delete affecting zero rows, and each
+  user's `profiles` row (auto-created by the `handle_new_user` trigger)
+  visible only to its owner. Test users and dummy products cleaned up
+  afterward, exactly as designed. This is the phase's full gate, now closed.
 
 ---
 
