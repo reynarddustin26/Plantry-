@@ -1,10 +1,15 @@
 import Link from 'next/link';
 import { notFound } from 'next/navigation';
 import { getRecipeById } from '@/lib/recipes-data';
+import { getProductById } from '@/lib/seed-data';
+import { createClient } from '@/lib/supabase/server';
+import { fetchNutritionByNames } from '@/lib/supabase/nutrition';
+import { calculateRecipeNutrition } from '@/lib/nutrition';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { Badge } from '@/components/ui/Badge';
 import { AllergyWarning } from '@/components/common/AllergyWarning';
+import { NutritionPanel } from '@/components/common/NutritionPanel';
 import { RecipeIngredientList } from '@/components/common/RecipeIngredientList';
 
 function labelize(value: string): string {
@@ -22,6 +27,25 @@ export default async function RecipeDetailPage({
   if (!recipe) {
     notFound();
   }
+
+  const productNamesById = new Map<string, string>();
+  for (const ingredient of recipe.ingredients) {
+    if (!ingredient.productId) continue;
+    const product = getProductById(ingredient.productId);
+    if (product) productNamesById.set(ingredient.productId, product.name);
+  }
+
+  const supabase = await createClient();
+  const nutritionByProductName = supabase
+    ? await fetchNutritionByNames(supabase, Array.from(productNamesById.values()))
+    : new Map();
+
+  const recipeNutrition = calculateRecipeNutrition(
+    recipe.ingredients,
+    recipe.servings,
+    nutritionByProductName,
+    (productId) => productNamesById.get(productId),
+  );
 
   return (
     <div className="flex flex-col gap-6">
@@ -55,10 +79,19 @@ export default async function RecipeDetailPage({
 
         <AllergyWarning allergens={recipe.allergens} />
 
-        <p className="text-xs text-muted-foreground">
-          Nutrition data not yet available for this recipe — real per-serving
-          nutrition lands in a later phase.
-        </p>
+        <div>
+          <NutritionPanel
+            nutrition={recipeNutrition.perServing}
+            label="Nutrition per serving"
+            emptyMessage="Nutrition info not available for this recipe."
+          />
+          {recipeNutrition.perServing && recipeNutrition.excludedIngredientNames.length > 0 && (
+            <p className="mt-1 text-xs italic text-muted-foreground">
+              Estimate excludes {recipeNutrition.excludedIngredientNames.join(', ')} — no
+              matching nutrition data or not measured by weight.
+            </p>
+          )}
+        </div>
       </Card>
 
       <div>

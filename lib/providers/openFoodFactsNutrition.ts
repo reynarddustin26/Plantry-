@@ -1,35 +1,14 @@
 import type { IngestedNutrition } from './types';
+import { isConfidentMatch } from './nameMatching.ts';
 
 // Open Food Facts nutrition enrichment. Barcode lookup is the accurate way to
 // use this API, but none of the 62 curated rows carry a barcode (see
 // curatedRetailProvider.ts), so this falls back to a name search — which
-// carries real mismatch risk against a global (largely non-AU) database. To
-// avoid silently attaching a WRONG product's nutrition (worse than the
-// honest `null` we already show), a match is only accepted when every
-// significant word of our product name appears in the candidate's product
-// name after normalization. Anything less confident is left null.
+// carries real mismatch risk against a global (largely non-AU) database. See
+// nameMatching.ts for the confidence guard shared with the USDA provider.
 const SEARCH_URL = 'https://world.openfoodfacts.org/cgi/search.pl';
 const USER_AGENT = 'Plantry-EducationalProject/0.1 (ingestion script; contact: n/a)';
 const TIMEOUT_MS = 8000;
-
-const STOPWORDS = new Set(['the', 'a', 'an', 'of', 'in', 'per', 'each', 'pk', 'pack']);
-
-function normalizeWords(name: string): string[] {
-  return name
-    .toLowerCase()
-    .replace(/\([^)]*\)/g, ' ')
-    .replace(/[^a-z0-9]+/g, ' ')
-    .split(' ')
-    .map((w) => w.trim())
-    .filter((w) => w.length > 1 && !STOPWORDS.has(w));
-}
-
-function isConfidentMatch(ourName: string, candidateName: string): boolean {
-  const ourWords = normalizeWords(ourName);
-  if (ourWords.length === 0) return false;
-  const candidateWords = new Set(normalizeWords(candidateName));
-  return ourWords.every((w) => candidateWords.has(w));
-}
 
 interface OffProduct {
   product_name?: string;

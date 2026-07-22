@@ -10,7 +10,8 @@
     "test": "vitest run",
     "e2e": "playwright test",
     "verify-rls": "node --env-file=.env.local scripts/verify-rls.mjs",
-    "ingest": "node --env-file=.env.local scripts/ingest.ts"
+    "ingest": "node --env-file=.env.local scripts/ingest.ts",
+    "backfill-nutrition": "node --env-file=.env.local scripts/backfill-nutrition.ts"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

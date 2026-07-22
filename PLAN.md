@@ -1600,3 +1600,92 @@ deeper than the report.
   net item loss → nutrition shows `—` not `0` for a fully-unknown basket
   → empty-basket and no-swap-found states both render their friendly
   message, never blank or crashing.
+
+## Nutrition coverage backfill + surfacing everywhere it should appear
+
+Reported as "almost every product shows unavailable." The stated root
+cause (a `product_nutrition` table join) is, once again, false — checked
+live against Supabase for the fourth time this session, still no such
+table. The real gap: only 10 of 53 ingested `products` rows had
+`nutrition_per_100g` populated, and it was never surfaced on the shop
+grid, comparison winner, or recipe pages at all.
+
+- **Did not run `npm run ingest` to backfill**, despite that being the
+  literal instruction — that script only ever `INSERT`s and has no
+  cleanup step, so re-running it against an already-populated `products`
+  table would duplicate all 53 rows rather than backfilling them. Wrote
+  `scripts/backfill-nutrition.ts` instead: reads only the rows where
+  `nutrition_per_100g IS NULL` and `UPDATE`s them in place.
+- Extracted the confidence-matching logic (every significant word of our
+  product name must appear in the candidate) that already existed for
+  Open Food Facts into `lib/providers/nameMatching.ts`, and built
+  `lib/providers/usdaNutrition.ts` as a second-pass fallback — restricted
+  to USDA's "Foundation"/"SR Legacy" data types (generic reference foods)
+  rather than "Branded" (specific packaged products, which can be a
+  wildly different recipe under a plain-sounding name — confirmed live:
+  a USDA "Branded" search for "chicken breast" returned a stuffed/breaded
+  multi-cheese product first).
+- Ran it against the live project: 43 products were missing nutrition;
+  11 got a confident match (9 via Open Food Facts, 2 via USDA) before
+  USDA's free `DEMO_KEY` hit its rate limit almost immediately (no real
+  USDA key exists to work around this — same class of external blocker
+  as the AI key earlier). Coverage went from 10/53 to 21/53. Spot-checked
+  4 newly-enriched rows against realistic reference values (e.g. tofu:
+  83kcal/10g protein per 100g) — all plausible, no fabrication. The
+  remaining 32 are left honestly null, not zero.
+- **Product cards (shop grid)**: added a real "Xg protein/100g" badge,
+  via one batched `fetchNutritionByNames` call for all visible products
+  (never a per-card fetch) — renders nothing at all when null, never a
+  fabricated "0g protein". This also activated `lib/nutrition.ts`'s
+  `proteinPerDollar`, which existed correctly already but had no caller
+  anywhere in the UI.
+- **Comparison page**: added a protein-winner highlight (emerald) —
+  deliberately limited to protein only. Calories/carbs/fat have no
+  universal "better" direction (depends on the user's actual goal), so
+  highlighting those would assert a value judgement this app has no
+  basis for; "more protein is better" is the one nutrient comparison
+  that's safely deterministic, matching this app's existing
+  protein-per-dollar framing.
+- **Recipe detail page**: replaced the hardcoded "real per-serving
+  nutrition lands in a later phase" placeholder — exactly the kind of
+  internal phase-reference this project's rules explicitly ban — with
+  real per-serving nutrition computed from `quantity × linked product's
+  real nutrition_per_100g`, summed and divided by servings
+  (`calculateRecipeNutrition`, new, in `lib/nutrition.ts`). Only
+  `'g'`/`'mL'` ingredient quantities are used; anything in `cup`/`tbsp`/
+  `tsp`/`each`/etc. is honestly excluded and named in a disclaimer rather
+  than estimated via a guessed density. Pantry staples (oil, garlic in
+  small amounts) are already flagged `pantryStaple: true` in the recipe
+  data and skipped silently, matching their existing treatment elsewhere.
+  Verified live: "Chicken & Rice Stir-Fry" now shows 195kcal/31.3g
+  protein per serving, correctly excluding only the one ingredient with
+  no nutrition match.
+- **Scoring functions (Step 6)**: `personalScore` in `lib/scoring.ts` was
+  NOT changed to weight protein/nutrition — that "never fabricate a
+  personalization signal from data that isn't there" decision was
+  deliberate from Phase 3 and remains sound; nothing in this round
+  changed the fact that the local catalog's `Product.nutritionPer100g`
+  is always null by construction (the frontend still reads
+  `lib/seed-data.ts`, not Supabase, for the base catalog — see PLAN.md
+  Section G). `proteinPerDollar` needed no logic changes, only a real
+  caller, which it now has on the shop grid. `nutritionMatch()` doesn't
+  exist anywhere in this codebase and was never built in any prior
+  phase — the instruction to "fix" it described a function that isn't
+  real, not one more of this session's false premises about existing
+  code.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (same 15 routes, zero TS errors),
+  `npm run test` ✓ (114/114, unchanged — no existing test depended on
+  provider internals).
+- Live-verified: shop grid shows real protein badges only where data
+  exists; product detail and compare pages show real per-100g values;
+  compare correctly highlights the real protein winner; recipe detail
+  shows real per-serving nutrition with an honest exclusion list; cart
+  summary (fixed in the previous round) continues to show `—` for
+  fully-unknown baskets.
+- Remaining gap, disclosed rather than hidden: 32 of 62 catalog products
+  still have no nutrition data. Closing that further requires either a
+  real (non-`DEMO_KEY`) USDA API key, or manually sourcing AU-specific
+  nutrition panels for products a global database doesn't confidently
+  match — both out of reach from this session.

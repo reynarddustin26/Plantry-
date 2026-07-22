@@ -1,4 +1,4 @@
-import type { Product } from './types';
+import type { NutritionPer100g, Product, RecipeIngredient } from './types';
 
 export interface ParsedPackageSize {
   totalGrams?: number;
@@ -73,4 +73,72 @@ export function proteinPerDollar(product: Product): number | null {
   if (!unitPrice || unitPrice.unit !== '100g') return null;
 
   return protein / unitPrice.amount;
+}
+
+export interface RecipeNutritionResult {
+  /** Per-serving totals, or null if not a single ingredient contributed any real data. */
+  perServing: NutritionPer100g | null;
+  includedCount: number;
+  /** Ingredients that were skipped: no linked product, no matched nutrition
+   *  data, or a quantity/unit that can't be honestly converted to a weight
+   *  (e.g. "1 each", "2 tbsp") — never estimated via a guessed density. */
+  excludedIngredientNames: string[];
+}
+
+// Real, deterministic per-serving nutrition computed from ingredient
+// quantity × its linked product's real nutrition_per_100g. Only 'g'/'mL'
+// quantities are used (mL treated as ~1g/mL, standard for the
+// water-based liquids in this catalog, e.g. milk) — anything else is
+// honestly excluded rather than guessed.
+export function calculateRecipeNutrition(
+  ingredients: RecipeIngredient[],
+  servings: number,
+  nutritionByProductName: Map<string, NutritionPer100g | null>,
+  getProductName: (productId: string) => string | undefined,
+): RecipeNutritionResult {
+  let calories = 0;
+  let protein = 0;
+  let carbs = 0;
+  let fat = 0;
+  let fibre = 0;
+  let includedCount = 0;
+  const excludedIngredientNames: string[] = [];
+
+  for (const ingredient of ingredients) {
+    if (ingredient.pantryStaple) continue;
+
+    const gramsEquivalent =
+      ingredient.unit === 'g' || ingredient.unit === 'mL' ? ingredient.quantity : null;
+    const productName = ingredient.productId ? getProductName(ingredient.productId) : undefined;
+    const nutrition = productName ? nutritionByProductName.get(productName) : null;
+
+    if (gramsEquivalent == null || !nutrition) {
+      excludedIngredientNames.push(ingredient.name);
+      continue;
+    }
+
+    includedCount += 1;
+    const factor = gramsEquivalent / 100;
+    calories += (nutrition.calories ?? 0) * factor;
+    protein += (nutrition.protein ?? 0) * factor;
+    carbs += (nutrition.carbs ?? 0) * factor;
+    fat += (nutrition.fat ?? 0) * factor;
+    fibre += (nutrition.fibre ?? 0) * factor;
+  }
+
+  if (includedCount === 0) {
+    return { perServing: null, includedCount, excludedIngredientNames };
+  }
+
+  return {
+    perServing: {
+      calories: calories / servings,
+      protein: protein / servings,
+      carbs: carbs / servings,
+      fat: fat / servings,
+      fibre: fibre / servings,
+    },
+    includedCount,
+    excludedIngredientNames,
+  };
 }

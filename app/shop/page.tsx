@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { ProductCard } from '@/components/common/ProductCard';
@@ -12,6 +12,8 @@ import { hasAllergenConflict } from '@/lib/allergens';
 import { ANONYMOUS_SCORING_PROFILE, findBestValueId, getRecommendationReason, rankByPersonalScore } from '@/lib/scoring';
 import { useCartStore } from '@/store/cartStore';
 import { useProfile } from '@/lib/hooks/useProfile';
+import { createClient } from '@/lib/supabase/client';
+import { fetchNutritionByNames } from '@/lib/supabase/nutrition';
 import type { Store } from '@/lib/types';
 
 const STORES: Store[] = ['Coles', 'Woolworths', 'IGA', 'ALDI'];
@@ -44,6 +46,30 @@ export default function ShopPage() {
     () => findBestValueId(results, profile ?? ANONYMOUS_SCORING_PROFILE),
     [results, profile],
   );
+
+  // One batched lookup for every visible product's real, ingested protein
+  // value (see lib/supabase/nutrition.ts) — never a per-card fetch, and
+  // never fabricated for products Phase 6/the backfill script haven't
+  // matched yet (those stay absent from the map, which ProductCard renders
+  // as "no badge", not a false "0g protein").
+  const [proteinByName, setProteinByName] = useState<Map<string, number | null>>(new Map());
+  useEffect(() => {
+    let cancelled = false;
+    const supabase = createClient();
+    if (!supabase) return;
+    fetchNutritionByNames(
+      supabase,
+      results.map((p) => p.name),
+    ).then((nutritionByName) => {
+      if (cancelled) return;
+      const next = new Map<string, number | null>();
+      nutritionByName.forEach((nutrition, name) => next.set(name, nutrition?.protein ?? null));
+      setProteinByName(next);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, [results]);
 
   function toggleCompare(id: string) {
     setCompareIds((prev) =>
@@ -171,6 +197,7 @@ export default function ShopPage() {
             unitPriceLabel={formatUnitPrice(calculateUnitPrice(product))}
             reason={getRecommendationReason(product, scoringProfile, { isBestValue })}
             reasonTone={conflict ? 'excluded' : 'positive'}
+            proteinPer100g={proteinByName.get(product.name) ?? null}
             actions={
               <div className="flex items-center justify-between gap-2 pt-1">
                 <label className="flex min-h-[44px] items-center gap-2 text-sm">

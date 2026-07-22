@@ -29,6 +29,14 @@ export default async function ComparePage({
       )
     : new Map();
 
+  // "More protein is better" is the one nutrient comparison this app can
+  // make without asserting a value judgement about the user's goal — see
+  // NutritionPanel.tsx's comment. Only meaningful with 2+ real values.
+  const proteinValues = products
+    .map((p) => nutritionByName.get(p.name)?.protein)
+    .filter((v): v is number => v != null);
+  const maxProtein = proteinValues.length >= 2 ? Math.max(...proteinValues) : null;
+
   return (
     <div className="flex flex-col gap-6">
       <div>
@@ -59,7 +67,10 @@ export default async function ComparePage({
               </p>
               <AllergyWarning allergens={product.allergens} />
               <ProductRecommendationInfo product={product} />
-              <NutritionPanel nutrition={nutritionByName.get(product.name) ?? null} />
+              <NutritionPanel
+                nutrition={nutritionByName.get(product.name) ?? null}
+                isProteinWinner={maxProtein != null && nutritionByName.get(product.name)?.protein === maxProtein}
+              />
               <AddToCartButton productId={product.id} />
             </Card>
           ))}
