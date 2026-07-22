@@ -769,9 +769,24 @@ codebase was touched.
   `/cookbook`'s new 3-column desktop grids render cleanly with zero console
   errors.
 
-### Deploy: blocked (see BLOCKED.md)
-No git remote is configured in this repo, so `git push` cannot reach
-GitHub/Vercel. This was already documented in `BLOCKED.md` earlier tonight,
-before any Phase 8 work started — not a new discovery. The commit for this
-phase is made locally as instructed; pushing needs a remote added and either
-your push or your go-ahead for me to do it.
+### Deploy: unblocked — pushed to GitHub
+Both `BLOCKED.md` items are resolved: the migration is applied (verified
+live, Section F) and `origin` now points at
+`https://github.com/reynarddustin26/Plantry-.git`, with `master` tracked and
+in sync. All Phase 5–8 commits, plus this phase's live re-verification
+commits, are pushed. Vercel deploy from here is a repo-connection step on
+vercel.com, not something drivable from this shell.
+
+### Final full-stack live verification (all four phases together)
+With the migration applied, Supabase fully populated, and the remote
+connected, ran the complete gate suite one more time end to end:
+- `npm run lint` ✓, `npm run build` ✓ (zero TypeScript errors, all 18 routes,
+  including `Proxy (Middleware)`), `npm run test` ✓ (96/96), `npm run e2e` ✓
+  (6/6 — one Firefox run initially hit the same `networkidle` timeout flake
+  documented earlier this session; re-ran in isolation and it passed cleanly,
+  confirming it's parallel-worker contention, not a live-Supabase-related
+  regression — `proxy.ts`'s session-refresh call isn't what's causing it,
+  since an isolated run has no other test load and still passed instantly).
+- This is the first time all four phases have been verified together against
+  the real, fully-populated backend rather than each phase's local/mocked
+  view of it — nothing broke crossing that boundary.

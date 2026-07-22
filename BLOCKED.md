@@ -1,8 +1,17 @@
 # Blocked items — tonight's Phase 5–8 run
 
+**Status: RESOLVED.** Both items below were fixed later the same night — the
+migration was applied via the SQL Editor and verified live (all 12 tables
+reachable, `allergies` seeded), and `origin` now points at
+`https://github.com/reynarddustin26/Plantry-.git` with `master` pushed and
+in sync. `scripts/verify-rls.mjs` (12/12 checks) and `npm run ingest` (53
+products, 27 recipes, 90 provenance rows) were both re-run for real against
+the live project afterward — see PLAN.md Sections F and G. Left in place as
+a record of what was blocked and why, not as an active warning.
+
 Two genuine capability gaps found immediately (not after prolonged flailing) —
-documenting per tonight's instructions rather than guessing or faking success.
-Everything NOT blocked by these proceeds normally in this same run.
+documented per that session's instructions rather than guessing or faking
+success. Everything NOT blocked by these proceeded normally in that run.
 
 ## 1. Cannot apply the Supabase migration myself
 
