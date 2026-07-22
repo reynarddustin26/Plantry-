@@ -1,59 +1,96 @@
-# Plantry
+# 🌱 Plantry
+> Personalised grocery, nutrition and meal-planning
+> assistant — built for the ICON UNSW × Lyra Hackathon
 
-Personalised grocery, nutrition, budgeting and meal-planning assistant. See
-`docs/PLANTRY_MASTER_BLUEPRINT.md` for the full product spec and `PLAN.md` for
-the implementation plan and phase-by-phase progress.
+**Live site:** https://plantry-git-master-plantry.vercel.app
+**GitHub:** https://github.com/reynarddustin26/Plantry-
 
-**Current status:** Phases 1–8 are code-complete and committed. Two things are
-blocked on external input — see `BLOCKED.md` — before the app is fully live:
-applying `supabase/migrations/0001_init.sql` to the real Supabase project, and
-adding a git remote so this can be pushed/deployed. Everything else (shopping
-flow, cookbook/optimiser, Supabase Auth, the data ingestion pipeline, the
-grounded AI explanation endpoint, and the visual polish pass) works today.
+---
 
-## Getting started
+## What it does
+Plantry compares grocery prices across Coles,
+Woolworths and IGA, blocks allergens before they
+reach your cart, matches your basket to recipes,
+and shows exactly how much time and money you saved.
+
+## Quick start
 
 ```bash
+git clone https://github.com/reynarddustin26/Plantry-
+cd Plantry-
 npm install
+cp .env.example .env.local
+# fill in your keys (see Environment Variables below)
 npm run dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000). The Demo Profile and full
-62-product catalog work entirely offline — no environment variables or network
-access required, ever (this is a hard reliability requirement, not just true
-for early phases).
+Open http://localhost:3000
 
-To exercise the Supabase-backed features (accounts, `/profile`, `/pantry`,
-rate-limited state for `/api/ai/explain`), copy your Supabase project's URL +
-anon key + service_role key into `.env.local`:
+## Environment Variables
+
+Create .env.local with:
 
 ```
 NEXT_PUBLIC_SUPABASE_URL=
 NEXT_PUBLIC_SUPABASE_ANON_KEY=
 SUPABASE_SERVICE_ROLE_KEY=
+GEMINI_API_KEY=
 ```
 
-For real AI-generated explanations instead of the deterministic fallback, also
-set `GEMINI_API_KEY` (optional — the app is fully usable without it; get a
-free key at https://aistudio.google.com/apikey).
+Get a free Gemini key at https://aistudio.google.com/apikey
+Get Supabase keys from your project dashboard.
+
+All four are optional — Plantry stays fully usable with none of them set
+(the Demo Profile and full product catalog work offline; AI calls fall
+back to deterministic, non-fabricated explanations without a Gemini key).
+
+## Database setup
+
+Run `supabase/migrations/0001_init.sql` in your Supabase SQL Editor before
+starting the app.
 
 ## Scripts
 
 ```bash
-npm run dev         # start the dev server
-npm run build       # production build
-npm run lint        # eslint (scoped to app/, components/, lib/, store/)
-npm run test        # vitest (unit tests)
-npm run e2e         # playwright (E2E, see E2E_TESTING.md)
-npm run verify-rls   # proves cart_items/pantry_items RLS isolation against the real Supabase project
-npm run ingest       # populates Supabase products/recipes from curated CSV + Open Food Facts + TheMealDB
+npm run dev          # start dev server
+npm run build        # production build
+npm run test         # unit tests (108 passing)
+npm run e2e           # E2E tests (6 passing)
+npm run verify-rls    # test RLS isolation
+npm run ingest        # populate products + recipes
 ```
 
-`verify-rls` and `ingest` both require `.env.local` and a Supabase project
-with the Phase 5 migration already applied.
+`verify-rls` and `ingest` both require `.env.local` and the migration above
+already applied.
 
-## Stack
+## Tech Stack
 
-Next.js (App Router) + TypeScript + Tailwind CSS v4 + Zustand + Zod +
-Framer Motion + Supabase (Postgres, Auth, RLS). See `PLAN.md` for the
-full phase-by-phase build log and every scope decision made along the way.
+- **Frontend:** Next.js 16 App Router + TypeScript + Tailwind CSS v4
+- **State:** Zustand + Zod validation
+- **Database:** Supabase (Postgres + Auth + RLS)
+- **AI:** Google Gemini API (free tier)
+- **Animations:** Framer Motion
+- **Testing:** Vitest + Playwright
+- **Deployment:** Vercel
+
+## AI Tools Used
+
+- Claude Code — implementation, testing, code review
+- Google Gemini — live AI explanations and chat
+- Open Food Facts + USDA FoodData Central — product nutrition data
+- TheMealDB — recipe catalogue
+
+## Features
+
+- 🔍 Price comparison across 3 stores with unit pricing
+- 🛡️ Hard allergen blocking — never softened by scores
+- 🤖 AI chat assistant (ask about products, meals, budget)
+- 🍳 Recipe matching from cart contents
+- 💰 Basket optimiser with explainable savings
+- 📊 Nutrition tracking against personal targets
+- 👤 Personalised onboarding and user profiles
+
+## Hackathon
+
+Built for ICON UNSW × Lyra Hackathon 2025
+Theme: Save time through personalisation
