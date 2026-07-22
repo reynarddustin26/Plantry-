@@ -34,7 +34,8 @@ SUPABASE_SERVICE_ROLE_KEY=
 ```
 
 For real AI-generated explanations instead of the deterministic fallback, also
-set `ANTHROPIC_API_KEY` (optional — the app is fully usable without it).
+set `GEMINI_API_KEY` (optional — the app is fully usable without it; get a
+free key at https://aistudio.google.com/apikey).
 
 ## Scripts
 

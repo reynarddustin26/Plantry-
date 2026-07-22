@@ -125,7 +125,7 @@ export function ProductAiPanel({ product }: { product: Product }) {
             {typedChars < fullText.length && <span className="animate-pulse">▍</span>}
           </p>
           <p className="text-xs text-muted-foreground">
-            {grounded ? 'Powered by Claude' : 'Deterministic explanation (AI unavailable)'}
+            {grounded ? 'Powered by Gemini' : 'Deterministic explanation (AI unavailable)'}
           </p>
         </div>
       )}

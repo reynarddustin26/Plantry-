@@ -93,7 +93,7 @@ export function AIChat() {
             </div>
             <div className="flex items-center gap-2">
               <span className="text-xs" style={{ color: 'var(--mint-light)' }}>
-                Powered by Claude
+                Powered by Gemini
               </span>
               <button
                 type="button"

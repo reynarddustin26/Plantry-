@@ -1,13 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
+import { GoogleGenerativeAI, type GenerateContentStreamResult } from '@google/generative-ai';
 import { createClient } from '@/lib/supabase/server';
-import { chatRequestSchema } from '@/lib/ai/chatSchemas';
+import { chatRequestSchema, type ChatMessage } from '@/lib/ai/chatSchemas';
 import { checkRateLimit } from '@/lib/ai/rateLimiter';
 
 const TIMEOUT_MS = 20_000;
 const MAX_MESSAGES_PER_HOUR = 30;
-// Corrected from the requested "claude-sonnet-4-6", which is not a real
-// model id — see PLAN.md's Phase 9/chat section for why.
-const MODEL = process.env.ANTHROPIC_CHAT_MODEL || 'claude-sonnet-5';
+// Corrected from the requested "gemini-1.5-flash" — see PLAN.md's AI
+// provider switch section for why (retired model id; verified live).
+const MODEL = process.env.GEMINI_CHAT_MODEL || 'gemini-flash-latest';
 
 const SYSTEM_PROMPT = `You are Plantry AI, a friendly grocery and meal planning assistant built into the Plantry app.
 
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) {
     return new Response(fallbackStream(FALLBACK_TEXT), {
       headers: { 'Content-Type': 'text/plain; charset=utf-8' },
@@ -87,24 +88,22 @@ export async function POST(request: NextRequest) {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
 
-  let upstream: Response;
+  // Gemini uses 'model' where Anthropic/OpenAI use 'assistant', and has no
+  // separate system-message role — the system prompt is passed as
+  // systemInstruction on the model instead of as a message.
+  const contents = messages.map((m: ChatMessage) => ({
+    role: m.role === 'assistant' ? 'model' : 'user',
+    parts: [{ text: m.content }],
+  }));
+
+  let streamResult: GenerateContentStreamResult;
   try {
-    upstream = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: MODEL,
-        max_tokens: 500,
-        system: `${SYSTEM_PROMPT}\n\n${contextLine}`,
-        messages: messages.map((m) => ({ role: m.role, content: m.content })),
-        stream: true,
-      }),
-      signal: controller.signal,
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: MODEL,
+      systemInstruction: `${SYSTEM_PROMPT}\n\n${contextLine}`,
     });
+    streamResult = await model.generateContentStream({ contents }, { signal: controller.signal });
   } catch {
     clearTimeout(timeout);
     return new Response(fallbackStream(FALLBACK_TEXT), {
@@ -112,49 +111,20 @@ export async function POST(request: NextRequest) {
     });
   }
 
-  if (!upstream.ok || !upstream.body) {
-    clearTimeout(timeout);
-    return new Response(fallbackStream(FALLBACK_TEXT), {
-      headers: { 'Content-Type': 'text/plain; charset=utf-8' },
-    });
-  }
-
-  // Anthropic sends SSE frames (event:/data: lines with JSON payloads) —
-  // re-emit only the extracted text deltas as plain text to keep the
-  // frontend's stream-reading code simple.
   const textStream = new ReadableStream<Uint8Array>({
     async start(streamController) {
-      const reader = upstream.body!.getReader();
-      const decoder = new TextDecoder();
       const encoder = new TextEncoder();
-      let buffer = '';
-
       try {
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          buffer += decoder.decode(value, { stream: true });
-
-          const lines = buffer.split('\n');
-          buffer = lines.pop() ?? '';
-
-          for (const line of lines) {
-            if (!line.startsWith('data: ')) continue;
-            const payload = line.slice('data: '.length).trim();
-            if (!payload || payload === '[DONE]') continue;
-            try {
-              const event = JSON.parse(payload) as {
-                type?: string;
-                delta?: { type?: string; text?: string };
-              };
-              if (event.type === 'content_block_delta' && event.delta?.type === 'text_delta') {
-                const text = event.delta.text ?? '';
-                if (text) streamController.enqueue(encoder.encode(text));
-              }
-            } catch {
-              // Malformed frame — skip it, don't break the whole stream.
-            }
+        for await (const chunk of streamResult.stream) {
+          let text: string;
+          try {
+            text = chunk.text();
+          } catch {
+            // Chunk blocked (safety filter) or has no text part — skip it,
+            // don't break the whole stream.
+            continue;
           }
+          if (text) streamController.enqueue(encoder.encode(text));
         }
       } catch {
         // Upstream aborted/errored mid-stream — end gracefully rather than

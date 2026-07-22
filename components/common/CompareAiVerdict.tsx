@@ -138,7 +138,7 @@ export function CompareAiVerdict({ products }: { products: Product[] }) {
       <p className="text-xs text-muted-foreground">
         Based on your {formatAud(profile.weeklyBudget)}/week budget and{' '}
         {profile.proteinTarget}g protein target.{' '}
-        {fullText !== null && (grounded ? 'Powered by Claude.' : 'Deterministic explanation (AI unavailable).')}
+        {fullText !== null && (grounded ? 'Powered by Gemini.' : 'Deterministic explanation (AI unavailable).')}
       </p>
     </Card>
   );

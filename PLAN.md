@@ -1179,3 +1179,68 @@ wording, in `components/layout/Footer.tsx`.
   until the user supplies their own `ANTHROPIC_API_KEY` in `.env.local`.
   Everything else about the chat (UI, streaming plumbing, rate limiting,
   deterministic fallback) is verified working.
+
+## AI provider switch: Anthropic → Google Gemini (free tier)
+
+Swapped both AI routes from Anthropic's Messages API to Google's Gemini
+API, at the user's request, once a real `GEMINI_API_KEY` became available
+(Anthropic never had a key configured all session — see the bug-sweep
+section above). Both routes previously called the provider directly via
+`fetch`, not an SDK, so "remove the Anthropic SDK" was a no-op; installed
+`@google/generative-ai` and used it for both routes.
+
+- `lib/ai/anthropicClient.ts` → renamed `lib/ai/geminiClient.ts` (same
+  exported `isAiConfigured`/`requestAiExplanation` shape, so
+  `app/api/ai/explain/route.ts` only needed an import-path change). Same
+  system prompt verbatim, same two-attempt-then-fallback structure. Added
+  `generationConfig: { responseMimeType: 'application/json' }` — a config
+  addition, not a prompt change — so Gemini returns raw JSON instead of
+  markdown-fenced JSON, making the existing `tryParseExplainResponse`
+  parsing more reliable than string-matching would be.
+- `app/api/ai/chat/route.ts` — replaced the raw SSE fetch/re-parse with
+  `model.generateContentStream()`, iterating `stream.stream` and calling
+  `.text()` per chunk (wrapped in its own try/catch, since a
+  safety-filtered chunk throws rather than returning empty). Same system
+  prompt, same `contextLine` injection (still passed as the model's
+  `systemInstruction`, since Gemini has no separate system-message role),
+  same rate limiting, same 20s timeout via `AbortSignal`, same offline
+  fallback text when `GEMINI_API_KEY` is absent. Gemini's roles are
+  `user`/`model` rather than Anthropic's `user`/`assistant` — mapped in
+  the `messages.map()` call.
+- **Model id correction**: the requested `gemini-1.5-flash` 404s for every
+  key — Google has fully retired it. Checked `gemini-2.5-flash` too (also
+  already retired for new users). Verified live against `ListModels` for
+  the actual configured key and confirmed `gemini-flash-latest` — Google's
+  maintained alias for the current recommended free-tier flash model —
+  works for both plain and streaming generation. Used that instead in both
+  files (`GEMINI_MODEL`/`GEMINI_CHAT_MODEL` env vars still override it),
+  matching this project's existing precedent of correcting invalid/dead
+  model ids rather than shipping a request that would 404 (see the Phase
+  9 chat section above re: the requested "claude-sonnet-4-6").
+- `.env.local` already had `GEMINI_API_KEY` set (user-provided) — left
+  untouched rather than overwritten. Added `.env.example` (didn't exist
+  before) documenting all required/optional env vars. Updated the
+  README's AI-key paragraph to reference `GEMINI_API_KEY` instead.
+- Fixed four now-inaccurate "Powered by Claude" attribution labels found
+  during live verification (`components/chat/AIChat.tsx`,
+  `components/landing/AIDemo.tsx`, `components/common/ProductAiPanel.tsx`,
+  `components/common/CompareAiVerdict.tsx`) — the task said the chat
+  frontend needed no changes, which was true for its logic, but these were
+  static text labels that would have been actively false once the backend
+  switched providers.
+- Live-verified end-to-end after the fix: `curl`'d both `/api/ai/chat` and
+  `/api/ai/explain` directly and got real Gemini text back (not the
+  fallback); then in a real browser, opened the chat widget and got a
+  grounded, context-aware answer referencing the actual demo profile's
+  budget/protein/allergen values, and pulled a real "Ask AI to explain
+  this choice" response on a product page — both showing "Powered by
+  Gemini" with zero console errors.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (same 20 routes, zero TS errors),
+  `npm run test` ✓ (108/108, unchanged — no test depended on the AI
+  provider or the attribution text).
+- No Anthropic references remain in application code (`app/`, `components/`,
+  `lib/`); the only surviving mentions are historical, in prior PLAN.md/
+  BLOCKED.md phase logs, which document decisions made at the time and are
+  intentionally not rewritten.

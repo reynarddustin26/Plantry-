@@ -1,10 +1,16 @@
+import { GoogleGenerativeAI } from '@google/generative-ai';
 import { explainResponseSchema, type ExplainRequest, type ExplainResponse } from './explainSchemas';
 
 const TIMEOUT_MS = 15_000;
-const DEFAULT_MODEL = 'claude-haiku-4-5-20251001';
+// Corrected from the requested "gemini-1.5-flash", which Google has fully
+// retired (404s for every key as of this build) — "gemini-2.5-flash" is
+// also already retired for new users. "gemini-flash-latest" is Google's
+// maintained alias that always points at the current recommended
+// free-tier flash model, so it won't silently break on the next retirement.
+const DEFAULT_MODEL = 'gemini-flash-latest';
 
 export function isAiConfigured(): boolean {
-  return Boolean(process.env.ANTHROPIC_API_KEY);
+  return Boolean(process.env.GEMINI_API_KEY);
 }
 
 const SYSTEM_PROMPT = `You explain grocery-shopping decisions for the Plantry app in plain, friendly \
@@ -21,29 +27,21 @@ already in the facts you were given.
 - Respond with ONLY a single JSON object matching this exact shape, no other text: \
 {"explanation": "<your explanation>", "grounded": true}`;
 
-async function callAnthropic(prompt: string, apiKey: string): Promise<string | null> {
+async function callGemini(prompt: string, apiKey: string): Promise<string | null> {
   const controller = new AbortController();
   const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'content-type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: process.env.ANTHROPIC_MODEL || DEFAULT_MODEL,
-        max_tokens: 300,
-        system: SYSTEM_PROMPT,
-        messages: [{ role: 'user', content: prompt }],
-      }),
-      signal: controller.signal,
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({
+      model: process.env.GEMINI_MODEL || DEFAULT_MODEL,
+      systemInstruction: SYSTEM_PROMPT,
+      generationConfig: { responseMimeType: 'application/json' },
     });
-    if (!res.ok) return null;
-    const data = (await res.json()) as { content?: Array<{ type: string; text?: string }> };
-    const text = data.content?.find((block) => block.type === 'text')?.text;
-    return text ?? null;
+    const result = await model.generateContent(
+      { contents: [{ role: 'user', parts: [{ text: prompt }] }] },
+      { signal: controller.signal },
+    );
+    return result.response.text() || null;
   } catch {
     // Timeout, network failure, or malformed response — caller falls back
     // to the deterministic template. An explanation is never worth an outage.
@@ -69,14 +67,14 @@ function tryParseExplainResponse(raw: string): ExplainResponse | null {
  * one stricter retry) — callers must fall back to buildFallbackExplanation.
  */
 export async function requestAiExplanation(request: ExplainRequest): Promise<ExplainResponse | null> {
-  const apiKey = process.env.ANTHROPIC_API_KEY;
+  const apiKey = process.env.GEMINI_API_KEY;
   if (!apiKey) return null;
 
   const factsJson = JSON.stringify(request.facts);
   const profileJson = JSON.stringify(request.profile);
 
   const firstPrompt = `Facts: ${factsJson}\nUser's shopping profile: ${profileJson}\n\nExplain this.`;
-  const firstRaw = await callAnthropic(firstPrompt, apiKey);
+  const firstRaw = await callGemini(firstPrompt, apiKey);
   if (firstRaw) {
     const parsed = tryParseExplainResponse(firstRaw);
     if (parsed) return parsed;
@@ -86,7 +84,7 @@ export async function requestAiExplanation(request: ExplainRequest): Promise<Exp
   // prompt before falling back to the deterministic template.
   const stricterPrompt = `${firstPrompt}\n\nSTRICT: reply with ONLY the JSON object described in your \
 system prompt — no markdown, no code fences, no extra text before or after it.`;
-  const secondRaw = await callAnthropic(stricterPrompt, apiKey);
+  const secondRaw = await callGemini(stricterPrompt, apiKey);
   if (secondRaw) {
     const parsed = tryParseExplainResponse(secondRaw);
     if (parsed) return parsed;

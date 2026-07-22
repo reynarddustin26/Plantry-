@@ -66,7 +66,7 @@ export function AIDemo() {
               <p className="rounded-xl p-3 text-sm text-white" style={{ background: 'rgba(245, 166, 35, 0.12)' }}>
                 🌱 {EXPLANATION}
               </p>
-              <p className="text-xs text-white/40">Powered by Claude AI</p>
+              <p className="text-xs text-white/40">Powered by Gemini AI</p>
             </div>
           )}
         </div>

@@ -1,14 +1,14 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 import { explainRequestSchema } from '@/lib/ai/explainSchemas';
-import { isAiConfigured, requestAiExplanation } from '@/lib/ai/anthropicClient';
+import { isAiConfigured, requestAiExplanation } from '@/lib/ai/geminiClient';
 import { buildFallbackExplanation } from '@/lib/ai/fallbackExplanation';
 import { checkRateLimit } from '@/lib/ai/rateLimiter';
 
 // Server-only route. All prices/nutrition/allergen facts are computed by
 // deterministic code before this route is ever called — the AI (when
 // configured) only explains them in plain language; it never calculates
-// anything (blueprint §9). Fully functional with ANTHROPIC_API_KEY absent —
+// anything (blueprint §9). Fully functional with GEMINI_API_KEY absent —
 // see lib/ai/fallbackExplanation.ts.
 export async function POST(request: NextRequest) {
   let body: unknown;
