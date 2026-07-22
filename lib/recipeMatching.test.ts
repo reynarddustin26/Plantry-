@@ -5,6 +5,7 @@ import {
   getMatchSummary,
   getMissingIngredients,
 } from './recipeMatching';
+import { RECIPES } from './recipes-data';
 import type { Recipe } from './types';
 
 const recipe: Recipe = {
@@ -77,12 +78,30 @@ describe('filterRecipes', () => {
     expect(filterRecipes(recipes, { course: 'breakfast' }).map((r) => r.id)).toEqual(['r2']);
   });
 
-  it('filters by tag', () => {
-    expect(filterRecipes(recipes, { tag: 'vegan' }).map((r) => r.id)).toEqual(['r2']);
+  it('filters by a single tag', () => {
+    expect(filterRecipes(recipes, { tags: ['vegan'] }).map((r) => r.id)).toEqual(['r2']);
   });
 
-  it('filters by method', () => {
-    expect(filterRecipes(recipes, { method: 'one_pot' }).map((r) => r.id)).toEqual(['r1']);
+  it('filters by a single method', () => {
+    expect(filterRecipes(recipes, { methods: ['one_pot'] }).map((r) => r.id)).toEqual(['r1']);
+  });
+
+  it('combines multiple tags with AND — a recipe must carry every selected tag', () => {
+    // r1 has both 'budget' and 'family'; a recipe with only one of the two
+    // must not match.
+    expect(filterRecipes(recipes, { tags: ['budget', 'family'] }).map((r) => r.id)).toEqual(['r1']);
+    expect(filterRecipes(recipes, { tags: ['budget', 'vegan'] })).toEqual([]);
+  });
+
+  it('combines a tag and a method with AND', () => {
+    expect(
+      filterRecipes(recipes, { tags: ['vegan'], methods: ['quick'] }).map((r) => r.id),
+    ).toEqual(['r2']);
+    expect(filterRecipes(recipes, { tags: ['vegan'], methods: ['one_pot'] })).toEqual([]);
+  });
+
+  it('returns an empty array (not a crash) when no recipe satisfies every filter', () => {
+    expect(filterRecipes(recipes, { tags: ['budget', 'vegan'], methods: ['one_pot'] })).toEqual([]);
   });
 
   it('filters by query against the title', () => {
@@ -96,5 +115,38 @@ describe('filterRecipes', () => {
 
   it('returns all recipes when no filters are given', () => {
     expect(filterRecipes(recipes, {})).toHaveLength(2);
+  });
+});
+
+// The exact combinations from the reported cookbook bug, run against the
+// real curated dataset (not the small fixture above) so this proves the
+// actual production behavior, not just the filter function in isolation.
+describe('filterRecipes against the real curated dataset', () => {
+  it('Vegan alone returns results', () => {
+    expect(filterRecipes(RECIPES, { tags: ['vegan'] }).length).toBeGreaterThan(0);
+  });
+
+  it('Budget alone returns results', () => {
+    expect(filterRecipes(RECIPES, { tags: ['budget'] }).length).toBeGreaterThan(0);
+  });
+
+  it('Vegan + Budget returns the one recipe tagged with both, not zero', () => {
+    const result = filterRecipes(RECIPES, { tags: ['vegan', 'budget'] });
+    expect(result.length).toBeGreaterThan(0);
+    expect(result.every((r) => r.tags.includes('vegan') && r.tags.includes('budget'))).toBe(true);
+  });
+
+  it('High Protein + Quick returns results', () => {
+    const result = filterRecipes(RECIPES, { tags: ['high_protein'], methods: ['quick'] });
+    expect(result.length).toBeGreaterThan(0);
+  });
+
+  it('BBQ alone returns results', () => {
+    expect(filterRecipes(RECIPES, { methods: ['bbq'] }).length).toBeGreaterThan(0);
+  });
+
+  it('BBQ + Budget legitimately returns zero — no curated recipe is both — and that is not a crash', () => {
+    expect(() => filterRecipes(RECIPES, { tags: ['budget'], methods: ['bbq'] })).not.toThrow();
+    expect(filterRecipes(RECIPES, { tags: ['budget'], methods: ['bbq'] })).toEqual([]);
   });
 });

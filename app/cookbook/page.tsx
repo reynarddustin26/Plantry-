@@ -29,23 +29,48 @@ function labelize(value: string): string {
   return value.replace(/_/g, ' ');
 }
 
+function toggleInSet<T>(set: Set<T>, value: T): Set<T> {
+  const next = new Set(set);
+  if (next.has(value)) next.delete(value);
+  else next.add(value);
+  return next;
+}
+
 export default function CookbookPage() {
   const cartItems = useCartStore((s) => s.items);
   const cartProductIds = cartItems.map((i) => i.productId);
   const [query, setQuery] = useState('');
   const [course, setCourse] = useState<RecipeCourse | undefined>();
-  const [tag, setTag] = useState<RecipeTag | undefined>();
-  const [method, setMethod] = useState<RecipeMethod | undefined>();
+  // Multi-select, AND logic: a recipe must carry every selected tag/method
+  // (e.g. Vegan + Budget only shows recipes tagged with both), not just one
+  // of them — this was the reported bug (tags were single-select before,
+  // so "combining" two tags just replaced the selection instead of
+  // narrowing it).
+  const [tags, setTags] = useState<Set<RecipeTag>>(new Set());
+  const [methods, setMethods] = useState<Set<RecipeMethod>>(new Set());
   const [canMakeNow, setCanMakeNow] = useState(false);
 
   const results = filterRecipes(RECIPES, {
     query,
     course,
-    tag,
-    method,
+    tags: Array.from(tags),
+    methods: Array.from(methods),
     canMakeNow,
     cartProductIds,
   });
+
+  const activeFilterPills: { label: string; onRemove: () => void }[] = [
+    ...(course ? [{ label: labelize(course), onRemove: () => setCourse(undefined) }] : []),
+    ...Array.from(tags).map((t) => ({
+      label: labelize(t),
+      onRemove: () => setTags((prev) => toggleInSet(prev, t)),
+    })),
+    ...Array.from(methods).map((m) => ({
+      label: labelize(m),
+      onRemove: () => setMethods((prev) => toggleInSet(prev, m)),
+    })),
+    ...(canMakeNow ? [{ label: 'Can make now', onRemove: () => setCanMakeNow(false) }] : []),
+  ];
 
   return (
     <div className="flex flex-col gap-6">
@@ -70,25 +95,25 @@ export default function CookbookPage() {
       <CourseTabs course={course} onChange={setCourse} />
 
       <div className="flex flex-wrap gap-2">
-        <FilterChip label="All diets" active={!tag} onClick={() => setTag(undefined)} />
+        <FilterChip label="All diets" active={tags.size === 0} onClick={() => setTags(new Set())} />
         {TAGS.map((t) => (
           <FilterChip
             key={t}
             label={labelize(t)}
-            active={tag === t}
-            onClick={() => setTag(t === tag ? undefined : t)}
+            active={tags.has(t)}
+            onClick={() => setTags((prev) => toggleInSet(prev, t))}
           />
         ))}
       </div>
 
       <div className="flex flex-wrap gap-2">
-        <FilterChip label="All methods" active={!method} onClick={() => setMethod(undefined)} />
+        <FilterChip label="All methods" active={methods.size === 0} onClick={() => setMethods(new Set())} />
         {METHODS.map((m) => (
           <FilterChip
             key={m}
             label={labelize(m)}
-            active={method === m}
-            onClick={() => setMethod(m === method ? undefined : m)}
+            active={methods.has(m)}
+            onClick={() => setMethods((prev) => toggleInSet(prev, m))}
           />
         ))}
         <FilterChip
@@ -99,19 +124,37 @@ export default function CookbookPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-        {results.map((recipe, index) => (
-          <div key={recipe.id} className="fade-up" style={{ transitionDelay: `${Math.min(index * 50, 400)}ms` }}>
-            <RecipeCard recipe={recipe} matchSummary={getMatchSummary(recipe, cartProductIds)} />
-          </div>
+        {results.map((recipe) => (
+          <RecipeCard key={recipe.id} recipe={recipe} matchSummary={getMatchSummary(recipe, cartProductIds)} />
         ))}
         {results.length === 0 && (
-          <div className="col-span-full flex flex-col items-center gap-2 py-10 text-center">
+          <div className="col-span-full flex flex-col items-center gap-3 py-10 text-center">
             <PlantryMascot className="h-16 w-16" />
-            <p className="text-sm text-muted-foreground">
-              {canMakeNow
-                ? 'Add more items to your cart to unlock recipes.'
-                : 'No recipes match your filters.'}
-            </p>
+            {activeFilterPills.length > 0 ? (
+              <>
+                <p className="text-sm font-semibold">No recipes match all your filters</p>
+                <p className="text-xs text-muted-foreground">Try removing one filter</p>
+                <div className="flex flex-wrap justify-center gap-2">
+                  {activeFilterPills.map((pill) => (
+                    <button
+                      key={pill.label}
+                      type="button"
+                      onClick={pill.onRemove}
+                      className="flex min-h-[36px] items-center gap-1.5 rounded-full border-2 border-[var(--emerald)] bg-card px-3 text-xs font-semibold capitalize text-foreground hover:bg-muted"
+                    >
+                      {pill.label}
+                      <span aria-hidden="true">✕</span>
+                    </button>
+                  ))}
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-muted-foreground">
+                {canMakeNow
+                  ? 'Add more items to your cart to unlock recipes.'
+                  : 'No recipes match your search.'}
+              </p>
+            )}
           </div>
         )}
       </div>

@@ -40,8 +40,13 @@ export function getMatchSummary(
 
 export interface RecipeFilters {
   course?: RecipeCourse;
-  tag?: RecipeTag;
-  method?: RecipeMethod;
+  // Multi-select, AND semantics: a recipe must carry every selected tag/
+  // method, not just one of them (e.g. Vegan + Budget only matches a recipe
+  // tagged with both). Course stays single-select — a recipe has exactly
+  // one course, so "combining" courses would mean OR, a different UX than
+  // the AND semantics tags/methods use.
+  tags?: RecipeTag[];
+  methods?: RecipeMethod[];
   query?: string;
   // "can make now" is computed live against the cart (blueprint §5's
   // pantry-match filter) rather than stored on the recipe.
@@ -54,8 +59,16 @@ export function filterRecipes(recipes: Recipe[], filters: RecipeFilters): Recipe
 
   return recipes.filter((r) => {
     if (filters.course && r.course !== filters.course) return false;
-    if (filters.tag && !r.tags.includes(filters.tag)) return false;
-    if (filters.method && !r.method.includes(filters.method)) return false;
+    if (filters.tags && filters.tags.length > 0 && !filters.tags.every((t) => r.tags.includes(t))) {
+      return false;
+    }
+    if (
+      filters.methods &&
+      filters.methods.length > 0 &&
+      !filters.methods.every((m) => r.method.includes(m))
+    ) {
+      return false;
+    }
     if (query && !r.title.toLowerCase().includes(query)) return false;
     if (filters.canMakeNow) {
       const missing = getMissingIngredients(r, filters.cartProductIds ?? []);

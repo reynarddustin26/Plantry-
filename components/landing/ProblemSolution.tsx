@@ -1,3 +1,5 @@
+import { FadeUp } from '@/components/common/FadeUp';
+
 const PAIRS = [
   { pain: '😩 "I spend 20 min comparing prices"', solution: 'Plantry compares all stores instantly' },
   { pain: '😟 "I always miss allergen warnings"', solution: 'Hard-blocked before they reach cart' },
@@ -6,10 +8,7 @@ const PAIRS = [
 
 export function ProblemSolution() {
   return (
-    <section
-      className="fade-up rounded-2xl px-4 py-10 sm:px-8"
-      style={{ background: 'var(--surface-light)' }}
-    >
+    <FadeUp as="section" className="rounded-2xl px-4 py-10 sm:px-8" style={{ background: 'var(--surface-light)' }}>
       <h2 className="mb-6 text-center text-2xl font-extrabold" style={{ color: 'var(--text-dark)' }}>
         Sound familiar?
       </h2>
@@ -26,6 +25,6 @@ export function ProblemSolution() {
           </div>
         ))}
       </div>
-    </section>
+    </FadeUp>
   );
 }

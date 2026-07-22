@@ -155,6 +155,8 @@ export function AIChat() {
           >
             <input
               type="text"
+              id="ai-chat-input"
+              name="ai-chat-input"
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask Plantry AI…"

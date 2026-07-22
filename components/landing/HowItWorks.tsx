@@ -1,3 +1,5 @@
+import { FadeUp } from '@/components/common/FadeUp';
+
 const STEPS = [
   { title: 'Tell us your goals', desc: 'Budget, diet, and allergies — set once, applied everywhere.' },
   { title: 'We compare the stores', desc: 'Real Coles, Woolworths and IGA prices, side by side.' },
@@ -13,15 +15,15 @@ export function HowItWorks() {
       className="scroll-mt-20 rounded-2xl px-4 py-12 sm:px-8"
       style={{ background: 'var(--surface-light)' }}
     >
-      <h2 className="fade-up mb-10 text-center text-2xl font-extrabold" style={{ color: 'var(--text-dark)' }}>
+      <FadeUp as="h2" className="mb-10 text-center text-2xl font-extrabold" style={{ color: 'var(--text-dark)' }}>
         How it works
-      </h2>
+      </FadeUp>
       <div className="grid grid-cols-1 gap-8 sm:grid-cols-5 sm:gap-4">
         {STEPS.map((step, i) => (
-          <div
+          <FadeUp
             key={step.title}
-            className="fade-up flex flex-col items-center gap-2 text-center"
-            style={{ transitionDelay: `${i * 80}ms` }}
+            delay={i * 0.08}
+            className="flex flex-col items-center gap-2 text-center"
           >
             <span
               className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full font-bold text-white"
@@ -33,7 +35,7 @@ export function HowItWorks() {
               {step.title}
             </p>
             <p className="text-xs text-muted-foreground">{step.desc}</p>
-          </div>
+          </FadeUp>
         ))}
       </div>
     </section>

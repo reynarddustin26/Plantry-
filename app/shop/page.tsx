@@ -60,13 +60,19 @@ export default function ShopPage() {
   return (
     <div className="flex flex-col gap-6 pb-20">
       <div
-        className="full-bleed flex min-h-[200px] flex-col justify-end px-4 pb-6 sm:px-6"
+        className="full-bleed flex min-h-[200px] flex-col justify-end pb-6"
         style={{ background: 'radial-gradient(circle at 30% 20%, var(--forest), var(--forest-deep) 70%)' }}
       >
-        <h1 className="text-2xl font-extrabold text-white lg:text-3xl">Shop</h1>
-        <p className="mt-1 text-sm" style={{ color: 'var(--mint-light)' }}>
-          {results.length} of {SEED_PRODUCTS.length} products
-        </p>
+        {/* Background stays full-bleed (100vw); this inner wrapper matches
+            main's own max-width + padding exactly so the title lines up
+            with the filter bar and product grid below it, instead of
+            sitting flush against the true viewport edge. */}
+        <div className="mx-auto w-full max-w-2xl px-4 lg:max-w-5xl lg:px-8 xl:max-w-7xl">
+          <h1 className="text-2xl font-extrabold text-white lg:text-3xl">Shop</h1>
+          <p className="mt-1 text-sm" style={{ color: 'var(--mint-light)' }}>
+            {results.length} of {SEED_PRODUCTS.length} products
+          </p>
+        </div>
       </div>
 
       {user && (
@@ -154,16 +160,12 @@ export default function ShopPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
-        {results.map((product, index) => {
+        {results.map((product) => {
           const isBestValue = product.id === bestValueId;
           const conflict = hasAllergenConflict(product, profile.allergies);
           return (
-          <div
-            key={product.id}
-            className="fade-up"
-            style={{ transitionDelay: `${Math.min(index * 50, 400)}ms` }}
-          >
           <ProductCard
+            key={product.id}
             product={product}
             unitPriceLabel={formatUnitPrice(calculateUnitPrice(product))}
             reason={getRecommendationReason(product, profile, { isBestValue })}
@@ -200,7 +202,6 @@ export default function ShopPage() {
               </div>
             }
           />
-          </div>
           );
         })}
         {results.length === 0 && (

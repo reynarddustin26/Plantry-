@@ -3,7 +3,6 @@ import './globals.css';
 import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartHydrator } from '@/components/common/CartHydrator';
-import { ScrollAnimationProvider } from '@/components/common/ScrollAnimationProvider';
 import { AIChat } from '@/components/chat/AIChat';
 
 export const metadata: Metadata = {
@@ -21,7 +20,6 @@ export default function RootLayout({
     <html lang="en">
       <body className="flex min-h-screen flex-col">
         <CartHydrator />
-        <ScrollAnimationProvider />
         <Header />
         {/* pt-[72px] compensates for the fixed header (removed from normal
             flow so it can float transparently over the homepage hero) —

@@ -23,7 +23,7 @@ export function Footer() {
           >
             View on GitHub
           </a>
-          <p>Portfolio demo build — no real accounts or payments.</p>
+          <p>Built for ICON UNSW × Lyra Hackathon 2025</p>
         </div>
       </div>
 

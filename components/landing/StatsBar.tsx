@@ -1,3 +1,5 @@
+import { FadeUp } from '@/components/common/FadeUp';
+
 // Product/recipe counts match the real Phase 6 ingestion results (53
 // products, 27 recipes populated in Supabase) — not placeholder numbers.
 const STATS = [
@@ -8,10 +10,7 @@ const STATS = [
 
 export function StatsBar() {
   return (
-    <section
-      className="fade-up full-bleed px-4 py-10 sm:px-6"
-      style={{ background: 'var(--emerald)' }}
-    >
+    <FadeUp as="section" className="full-bleed px-4 py-10 sm:px-6" style={{ background: 'var(--emerald)' }}>
       <div className="mx-auto grid max-w-5xl grid-cols-3 gap-4 text-center">
         {STATS.map((stat) => (
           <div key={stat.label}>
@@ -22,6 +21,6 @@ export function StatsBar() {
           </div>
         ))}
       </div>
-    </section>
+    </FadeUp>
   );
 }

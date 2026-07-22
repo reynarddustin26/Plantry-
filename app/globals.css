@@ -140,14 +140,9 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-orb,
   .mascot-float,
-  .chat-pulse-ring,
-  .fade-up {
+  .chat-pulse-ring {
     animation: none !important;
     transition: none !important;
-  }
-  .fade-up {
-    opacity: 1;
-    transform: none;
   }
 }
 
@@ -155,18 +150,16 @@ body {
    Global micro-interactions (Phase 8.5)
    --------------------------------------------------------------------- */
 
-/* Fade up on scroll — lib/hooks/useScrollAnimation.ts toggles .visible */
-.fade-up {
-  opacity: 0;
-  transform: translateY(24px);
-  transition: opacity 0.5s ease, transform 0.5s ease;
-}
-.fade-up.visible {
-  opacity: 1;
-  transform: translateY(0);
-}
+/* Fade-up-on-scroll is now components/common/FadeUp.tsx (Framer Motion's
+   whileInView) — a hand-rolled IntersectionObserver + .fade-up/.visible
+   class-toggle version lived here through Phase 9, but kept triggering a
+   React dev-mode hydration-mismatch false positive no matter how long its
+   DOM mutation was deferred after mount. FadeUp sidesteps the problem
+   structurally (see that file's comment) and also handles
+   prefers-reduced-motion itself via useReducedMotion(), so there's nothing
+   left to do here.
 
-/* Float animation for the hero mascot */
+   Float animation for the hero mascot */
 @keyframes float {
   0%, 100% { transform: translateY(0px); }
   50% { transform: translateY(-12px); }

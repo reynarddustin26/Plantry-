@@ -48,7 +48,7 @@ export function AIDemo() {
           </p>
 
           {showResult && (
-            <div className="fade-up visible mt-5 flex flex-col gap-3">
+            <div className="mt-5 flex flex-col gap-3">
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-xl bg-white/5 p-3">
                   <p className="text-sm font-semibold text-white">Greek Yoghurt</p>

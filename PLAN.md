@@ -1065,3 +1065,117 @@ the real Demo Profile values otherwise — never fabricated context.
   `/cart`, `/profile` (correctly redirects to sign-in) — zero console
   errors on any of them except the pre-existing, unrelated missing
   `/favicon.ico` (a 404, not a JS error, not introduced this phase).
+
+## Bug sweep (post-Phase 9)
+
+Full-app bug sweep across cookbook filters, shop layout, the AI chat
+widget, the landing hero, and a page-by-page navigation/console audit.
+
+### Cookbook multi-select filter bug (real, fixed)
+Combining two tag/method filters (e.g. Vegan + Budget) silently replaced
+the selection instead of narrowing it — `RecipeFilters.tag`/`.method` were
+single-value fields, so the AND-matching logic in `filterRecipes` itself
+was already correct but never got to run against more than one tag at a
+time. Fixed in `lib/recipeMatching.ts` by changing to `tags?: RecipeTag[]`
+/ `methods?: RecipeMethod[]` with `.every()` semantics; `app/cookbook/page.tsx`
+now tracks selections as `Set<RecipeTag>`/`Set<RecipeMethod>`. Added a
+graceful empty state (mascot + "No recipes match all your filters" +
+removable filter pills) instead of a blank grid. 9 new unit tests added
+against the real 16-recipe curated dataset covering the exact reported
+combinations (Vegan alone, Budget alone, Vegan+Budget, High Protein+Quick,
+BBQ alone, BBQ+Budget — the last one legitimately empty, verified it
+renders the graceful state rather than throwing).
+
+### Shop page title padding (real, fixed)
+The dark full-bleed header strip applied padding directly to the 100vw
+element, so `px-4`/`px-6` was relative to the true viewport edge, not the
+site's content column — the title sat flush left while everything below it
+(search bar, filters, product grid) used `main`'s max-width. Fixed with an
+inner wrapper matching `main`'s own responsive max-width scale
+(`max-w-2xl lg:max-w-5xl xl:max-w-7xl`), keeping the background full-bleed
+and only the content constrained.
+
+### AI chat "offline mode" (not a code bug — external blocker)
+User repeatedly reported a naming mismatch between `AI_API_KEY` and
+`ANTHROPIC_API_KEY` across Phase 7's explain route and the chat route.
+Re-verified directly against source multiple times: both
+`lib/ai/anthropicClient.ts` and `app/api/ai/chat/route.ts` consistently
+read `process.env.ANTHROPIC_API_KEY` — no mismatch exists anywhere in the
+codebase. The real issue is that no Anthropic API key exists in
+`.env.local` or the system environment at all. This can't be fixed in code;
+it requires a real key from the user's own Anthropic account. Confirmed
+live that the fallback path works correctly: sending "hi" in the chat
+renders the deterministic offline-mode message cleanly, with no console
+error and no stuck loading state.
+
+### Landing hero "missing" (not reproducible)
+Reported as missing from the top of `/` at least twice across two
+sessions. Every fresh-server, cache-cleared, DOM-inspected check this
+session (and the prior one) confirms `<Hero />` is the first element
+returned from `app/page.tsx` and renders correctly, including a 375px
+mobile-viewport screenshot this round. Most likely explanation: a stale
+cached view on the user's end (e.g. a Vercel preview) rather than a code
+defect — never reproduced against localhost.
+
+### Fade-up hydration warning + Framer Motion variant-propagation bug (real, fixed)
+The Phase 8.5 hand-rolled IntersectionObserver + `.fade-up`/`.visible`
+CSS-class approach kept triggering a React dev-mode hydration-mismatch
+warning no matter how long its post-mount DOM mutation was deferred
+(tried `requestAnimationFrame`, then a 100ms `setTimeout` — both looked
+fixed on one check and recurred on the next). Root-caused as a structural
+mismatch with Next 16 dev mode's extra Suspense/SegmentView instrumentation,
+not a timing problem. Replaced entirely with `components/common/FadeUp.tsx`,
+a thin Framer Motion `whileInView` wrapper (respects
+`useReducedMotion()`), which avoids the SSR/hydration-diff problem
+structurally. Confirmed zero console warnings after the switch.
+
+While rolling this out to the shop/cookbook product and recipe grids, it
+caused a regression: wrapping `ProductCard`/`RecipeCard` in `<FadeUp>`
+made the entire grid render blank below the fold. Cause: `FadeUp` uses
+inline `initial`/`whileInView` animation objects, while `components/ui/Card.tsx`
+(used inside both card components) uses named string `variants={staggerItem}`
+from `lib/motion.ts`. Nesting a variants-based `motion.div` inside an
+inline-animation-object `motion.div` means the child receives an implicit
+"hidden" propagation trigger from the parent's motion context but never a
+matching "visible" one (the parent doesn't speak the variants protocol),
+so the child gets stuck at `opacity:0` permanently. Fixed by reverting the
+shop/cookbook grids to plain unanimated `.map()` rendering — consistent
+with this project's original decision not to stagger long lists — and
+keeping `FadeUp` only on standalone landing-page sections/headings that
+don't nest a variants-based `Card`. Documented as a standing anti-pattern
+in `FadeUp.tsx`'s own comment.
+
+### Navigation audit
+Clicked through `/`, `/shop` (incl. adding to cart, comparing, the sticky
+filter bar), `/shop/product/[id]`, `/shop/compare`, `/cookbook` (incl. all
+reported filter combinations), `/cart` (empty state, populated state,
+quantity controls, "Optimise my basket" panel), `/demo-profile`,
+`/auth/signin`, `/auth/signup` — zero console errors anywhere except the
+pre-existing, unrelated `/favicon.ico` 404. Found and fixed one minor a11y
+issue along the way: the chat widget's text input had no `id`/`name`
+attribute (`components/chat/AIChat.tsx`).
+
+### Mobile 375px check
+Verified `/` and `/shop` at a 375×812 mobile-emulated viewport (touch,
+2x DPR): `document.documentElement.scrollWidth === clientWidth === 375` on
+both (no horizontal overflow), product cards render fully with all text
+visible when scrolled clear of the floating chat/dev-tools overlay
+buttons, filter chips wrap cleanly, hero content stacks single-column with
+no cutoff.
+
+### Footer text (Bug 6)
+Changed from "Portfolio demo build — no real accounts or payments." to
+"Built for ICON UNSW × Lyra Hackathon 2025" per the exact requested
+wording, in `components/layout/Footer.tsx`.
+
+### Gate status: complete, all green
+- `npm run lint` ✓ (zero warnings), `npm run build` ✓ (zero TS errors, same
+  20 routes), `npm run test` ✓ (108/108 — 9 new for the multi-select filter
+  fix), `npm run e2e` ✓ (6/6 across chromium/firefox/webkit).
+- Live-checked via Chrome DevTools MCP across every page in the nav audit
+  list above, plus the 375px mobile pass — zero console errors introduced
+  or found beyond the pre-existing favicon 404.
+- Known, unfixable-by-code blocker: AI chat has no real Claude responses
+  until the user supplies their own `ANTHROPIC_API_KEY` in `.env.local`.
+  Everything else about the chat (UI, streaming plumbing, rate limiting,
+  deterministic fallback) is verified working.
