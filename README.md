@@ -1,7 +1,7 @@
 # Plantry
 
 Personalised grocery, nutrition, budgeting and meal-planning assistant. See
-`docs/PLANTRY_MASTER_BLUEPRINT.md` for the full product spec and `PLAN.md` for
+`PLAN.md` for
 the implementation plan and phase-by-phase progress.
 
 **Current status:** Phases 1–8 are code-complete and committed. Two things are
