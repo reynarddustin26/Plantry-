@@ -1,7 +1,5 @@
-// A small, friendly "concentric spheres" character for the landing hero —
-// three nested circles (body, a lighter mid layer, a warm gold core) plus a
-// tiny sprout, matching the brand direction from blueprint §4 ("fun/goofy
-// but professional") and the 🌱 already used in the Header wordmark.
+// Plantry's "concentric spheres" mascot — three nested circles, three amber
+// leaves, a simple face. Used small (header logo mark) and large (hero).
 export function PlantryMascot({ className }: { className?: string }) {
   return (
     <svg
@@ -14,15 +12,10 @@ export function PlantryMascot({ className }: { className?: string }) {
       <circle cx="100" cy="112" r="48" fill="var(--mint)" />
       <circle cx="100" cy="112" r="24" fill="var(--gold)" />
 
-      {/* sprout */}
-      <path
-        d="M100 42 C 96 24, 80 18, 68 20 C 72 34, 84 42, 100 42 Z"
-        fill="var(--mint-light)"
-      />
-      <path
-        d="M100 42 C 104 22, 122 14, 136 16 C 130 32, 116 42, 100 42 Z"
-        fill="var(--emerald)"
-      />
+      {/* three amber leaves */}
+      <path d="M100 42 C 97 26, 84 18, 72 19 C 75 32, 86 41, 100 42 Z" fill="var(--gold)" />
+      <path d="M100 42 C 103 22, 122 13, 137 15 C 130 32, 115 42, 100 42 Z" fill="var(--amber)" />
+      <path d="M100 42 C 100 28, 100 16, 100 8 C 106 16, 106 30, 100 42 Z" fill="var(--gold)" />
       <line x1="100" y1="42" x2="100" y2="58" stroke="var(--forest)" strokeWidth="4" strokeLinecap="round" />
 
       {/* face */}

@@ -790,3 +790,95 @@ connected, ran the complete gate suite one more time end to end:
 - This is the first time all four phases have been verified together against
   the real, fully-populated backend rather than each phase's local/mocked
   view of it — nothing broke crossing that boundary.
+
+---
+
+## Section J — Phase 8.5 Execution (Full Visual Redesign)
+
+### What was built
+- **Bug fix**: `app/cart/page.tsx` no longer shows "Nutrition totals arrive
+  once product nutrition data is available (Phase 6)" — an internal
+  phase-reference that should never have been user-facing.
+- **Decision: no fabricated cart nutrition total.** The instruction offered
+  two options — show real totals, or remove the message. Real totals aren't
+  honestly computable today: cart items reference the local curated catalog
+  (`lib/seed-data.ts`, string ids), while Open-Food-Facts-enriched nutrition
+  lives in Supabase's `products` table (UUID-keyed, only 10/53 products
+  matched) — there's no link between the two, and summing "10 of however-many
+  items have real data" as if it were a complete total would silently
+  undercount. Removed the message; did not fabricate a number.
+- **Design tokens + animated hero**: `app/globals.css` — `--surface-light`/
+  `--text-dark` added; the Phase 8 hero-orb system replaced with the exact
+  spec (4 orbs, individual sizes/positions/colors/durations, `drift1/2/3`
+  keyframes); new `.fade-up`, `.mascot-float`, `.btn-primary`, `.card-hover`
+  utility classes.
+- **Fixed, scroll-aware header**: `components/layout/Header.tsx` converted
+  to a Client Component — transparent+white over the homepage hero,
+  solid+dark everywhere else or once scrolled, amber active-tab underline.
+  Converting to `position: fixed` (so it can float transparently) required
+  compensating top padding on `<main>` (`pt-[96px] lg:pt-[112px]` = header
+  height + original `py-6`/`py-10`) — `components/landing/Hero.tsx` cancels
+  this with a matching negative margin so its background still reaches the
+  true top/edges of the viewport, the same full-bleed pattern already
+  proven in Phase 8's `-mx-4 lg:-mx-8` trick.
+- **`lib/hooks/useScrollAnimation.ts`**: IntersectionObserver-based, adds
+  `.visible` to `.fade-up` elements. Re-runs on every route change via
+  `usePathname()` — `app/layout.tsx` does not remount on client-side
+  navigation, so a mount-only effect would only ever see the first page's
+  elements. Deferred one `requestAnimationFrame` after mount so its near-
+  instant first callback (for already-in-view elements) never lands in the
+  same tick as Next dev mode's post-hydration diff, which otherwise
+  misreports the resulting class change as a hydration mismatch.
+- **Landing page** (`app/page.tsx` + `components/landing/*`): full hero
+  rewrite (pill badge, headline, subtitle, two CTAs, floating mascot, scroll
+  indicator, all scroll-linked via anchors + `scroll-mt`), the existing
+  functional intent-picker preserved as its own section directly below (kept
+  the original heading/copy — critical for the E2E journey, which selects an
+  intent card and clicks Continue), then How-it-works / Why-Plantry /
+  Stats-bar sections. Deleted `components/common/HeroOrbBackground.tsx`
+  (Phase 8), superseded by the new `Hero.tsx`.
+- **Mascot**: 3 amber-toned leaves (was 2, mixed mint/emerald) per spec.
+- **Shop page**: dark gradient header strip, sticky filter bar with emerald-
+  filled active pills and a live amber result-count badge, emerald "Add"
+  button, capped stagger fade-in (`min(index × 50ms, 400ms)` — uncapped would
+  make the last of 62 cards wait 3.1s, reintroducing the exact "laggy long
+  list" problem Phase 1 deliberately avoided; a cap keeps the requested
+  stagger feel without that regression).
+- **Cookbook page**: course row rebuilt as true sliding-indicator tabs via
+  Framer Motion `layoutId` (already a dependency); diet/method rows recolored
+  to the same emerald-fill active state for consistency. `RecipeCard`
+  gained a gradient placeholder image band (forest→emerald — there is no
+  recipe photography pipeline in this app, so an honest gradient rather than
+  a fabricated stock photo), a real time badge, a "High protein" badge only
+  when the recipe actually carries that tag (no per-recipe protein gram
+  value exists to display — never fabricated), and emerald "Can make now" /
+  amber "N items missing" badges from the existing real match-summary data.
+- **Cart page**: emerald left-border line items, circular emerald quantity
+  buttons, amber-gradient full-width "Optimise my basket" button. Remove
+  button is `opacity-0` → hover-`opacity-100` only at `sm:` and up — always
+  visible below that, since touch devices have no hover state and hiding a
+  destructive action's only trigger behind an interaction that doesn't exist
+  on mobile would be a real usability regression, not a stylistic nuance.
+  Empty state now shows the mascot + "Start shopping →".
+- Kept `Button`'s existing token-based colors and `Card`'s existing Framer
+  Motion hover animation everywhere they were already used, rather than
+  layering the new `.btn-primary`/`.card-hover` CSS classes on top of them —
+  both systems animate the same `transform` property, and CSS classes vs.
+  Framer Motion's inline styles fighting over one property causes jank, not
+  a stronger effect. The new CSS classes are used only on elements that
+  don't already have Framer Motion hover behavior.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (zero TS errors — one real error caught
+  and fixed: `Card` doesn't accept a `style` prop, switched the cart line
+  item's border color to a Tailwind arbitrary-value class instead), `npm run
+  test` ✓ (96/96, unchanged), `npm run e2e` ✓ (6/6 — one Firefox
+  `networkidle` flake, same pre-existing pattern, passed cleanly in
+  isolation both times it occurred this session).
+- Visually verified via Chrome DevTools MCP at 1440px and 375px: hero,
+  transparent→solid header transition, intent-picker section, How-it-works
+  section all render correctly with the right content and no console errors
+  (one screenshot caught what looked like a light gap behind the transparent
+  header — re-screenshotted a moment later and it was a paint-timing
+  artifact of the very first frame, not a real layout bug — confirmed via
+  `getBoundingClientRect()` showing the hero genuinely reaches `top: 0`).

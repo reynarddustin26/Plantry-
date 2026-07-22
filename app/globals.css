@@ -43,10 +43,11 @@ body {
 }
 
 /*
-  Landing-hero-only brand palette + animated gradient background (Phase 8).
-  Deliberately separate from the @theme tokens above, which drive the whole
-  app's UI chrome — these are specific to the hero's "fun/goofy but
-  professional" visual identity (blueprint §4), not a site-wide recolor.
+  Landing-hero-only brand palette + animated gradient background
+  (Phase 8, redone in Phase 8.5 to the exact spec below). Deliberately
+  separate from the @theme tokens above, which drive the whole app's UI
+  chrome — these are specific to the hero/marketing visual identity
+  (blueprint §4's "fun/goofy but professional"), not a site-wide recolor.
 */
 :root {
   --forest-deep: #072a20;
@@ -56,80 +57,140 @@ body {
   --mint-light: #5eeab0;
   --amber: #f5a623;
   --gold: #f9c05b;
+  --surface-light: #f4f7f5;
+  --text-dark: #072a20;
 }
 
 .hero-gradient-bg {
   position: relative;
   overflow: hidden;
-  background: linear-gradient(180deg, var(--forest-deep), var(--forest));
+  background: radial-gradient(circle at 30% 20%, var(--forest), var(--forest-deep) 70%);
   isolation: isolate;
 }
 
 .hero-orb {
   position: absolute;
   border-radius: 9999px;
-  filter: blur(48px);
-  opacity: 0.55;
   z-index: 0;
   will-change: transform;
+  pointer-events: none;
 }
 
 .hero-orb-1 {
-  width: 22rem;
-  height: 22rem;
-  top: -6rem;
-  left: -4rem;
-  background: radial-gradient(circle, var(--emerald), transparent 70%);
-  animation: drift-1 22s ease-in-out infinite;
+  width: 500px;
+  height: 500px;
+  top: -8%;
+  right: -8%;
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, rgba(16, 185, 129, 0) 70%);
+  animation: drift1 18s ease-in-out infinite;
 }
 
 .hero-orb-2 {
-  width: 18rem;
-  height: 18rem;
-  bottom: -5rem;
-  right: -3rem;
-  background: radial-gradient(circle, var(--mint), transparent 70%);
-  animation: drift-2 26s ease-in-out infinite;
+  width: 400px;
+  height: 400px;
+  bottom: -10%;
+  left: -8%;
+  background: radial-gradient(circle, rgba(11, 61, 46, 0.4) 0%, rgba(11, 61, 46, 0) 70%);
+  animation: drift2 22s ease-in-out infinite;
 }
 
 .hero-orb-3 {
-  width: 16rem;
-  height: 16rem;
-  top: 30%;
-  right: 15%;
-  background: radial-gradient(circle, var(--amber), transparent 70%);
-  animation: drift-3 30s ease-in-out infinite;
+  width: 300px;
+  height: 300px;
+  top: 40%;
+  left: 45%;
+  background: radial-gradient(circle, rgba(52, 211, 153, 0.15) 0%, rgba(52, 211, 153, 0) 70%);
+  animation: drift3 15s ease-in-out infinite;
 }
 
 .hero-orb-4 {
-  width: 14rem;
-  height: 14rem;
-  bottom: 10%;
-  left: 20%;
-  background: radial-gradient(circle, var(--forest), transparent 70%);
-  opacity: 0.7;
-  animation: drift-1 24s ease-in-out infinite reverse;
-}
-
-@keyframes drift-1 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(3rem, 2rem) scale(1.1); }
-}
-
-@keyframes drift-2 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-2.5rem, -3rem) scale(1.05); }
-}
-
-@keyframes drift-3 {
-  0%, 100% { transform: translate(0, 0) scale(1); }
-  50% { transform: translate(-2rem, 2.5rem) scale(0.95); }
+  width: 200px;
+  height: 200px;
+  bottom: 5%;
+  right: 10%;
+  background: radial-gradient(circle, rgba(245, 166, 35, 0.15) 0%, rgba(245, 166, 35, 0) 70%);
+  animation: drift2 25s ease-in-out infinite;
+  animation-delay: -12s; /* reuses drift2's shape but out of phase, so orb 2 and 4 never sync */
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .hero-orb {
-    animation: none;
+  .hero-orb,
+  .mascot-float,
+  .fade-up {
+    animation: none !important;
+    transition: none !important;
   }
+  .fade-up {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* ---------------------------------------------------------------------
+   Global micro-interactions (Phase 8.5)
+   --------------------------------------------------------------------- */
+
+/* Fade up on scroll — lib/hooks/useScrollAnimation.ts toggles .visible */
+.fade-up {
+  opacity: 0;
+  transform: translateY(24px);
+  transition: opacity 0.5s ease, transform 0.5s ease;
+}
+.fade-up.visible {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Float animation for the hero mascot */
+@keyframes float {
+  0%, 100% { transform: translateY(0px); }
+  50% { transform: translateY(-12px); }
+}
+.mascot-float {
+  animation: float 3s ease-in-out infinite;
+}
+
+/* Orb drift animations */
+@keyframes drift1 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(30px, -20px) scale(1.05); }
+  66% { transform: translate(-15px, 25px) scale(0.97); }
+}
+@keyframes drift2 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  50% { transform: translate(-25px, -30px) scale(1.08); }
+}
+@keyframes drift3 {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  40% { transform: translate(20px, 15px) scale(0.95); }
+  80% { transform: translate(-10px, -20px) scale(1.03); }
+}
+
+/* Scroll-bounce indicator at the bottom of the hero */
+@keyframes bounce-down {
+  0%, 100% { transform: translateY(0); opacity: 0.4; }
+  50% { transform: translateY(8px); opacity: 0.7; }
+}
+.scroll-indicator {
+  animation: bounce-down 1.8s ease-in-out infinite;
+}
+
+/* Button hover lift */
+.btn-primary {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+.btn-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 24px rgba(16, 185, 129, 0.35);
+}
+
+/* Card hover lift */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.card-hover:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 12px 32px rgba(7, 42, 32, 0.12);
 }
 
 /* Allergy warnings must never rely on color alone: icon + text + border. */

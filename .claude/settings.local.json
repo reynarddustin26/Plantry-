@@ -25,7 +25,8 @@
       "mcp__plugin_ecc_chrome-devtools__hover",
       "mcp__plugin_ecc_chrome-devtools__click",
       "Bash(timeout 20 bash -c 'while true; do sleep 2; done')",
-      "Bash(wait)"
+      "Bash(wait)",
+      "Bash(powershell -NoProfile -Command \"Get-CimInstance Win32_Process -Filter \\\\\"Name='node.exe'\\\\\" | Select-Object ProcessId,CommandLine\")"
     ]
   },
   "enabledMcpjsonServers": [

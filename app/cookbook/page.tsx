@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { motion } from 'framer-motion';
 import { RecipeCard } from '@/components/common/RecipeCard';
 import { RECIPES } from '@/lib/recipes-data';
 import { filterRecipes, getMatchSummary } from '@/lib/recipeMatching';
@@ -65,17 +66,7 @@ export default function CookbookPage() {
         />
       </label>
 
-      <div className="flex flex-wrap gap-2">
-        <FilterChip label="All courses" active={!course} onClick={() => setCourse(undefined)} />
-        {COURSES.map((c) => (
-          <FilterChip
-            key={c}
-            label={labelize(c)}
-            active={course === c}
-            onClick={() => setCourse(c === course ? undefined : c)}
-          />
-        ))}
-      </div>
+      <CourseTabs course={course} onChange={setCourse} />
 
       <div className="flex flex-wrap gap-2">
         <FilterChip label="All diets" active={!tag} onClick={() => setTag(undefined)} />
@@ -107,12 +98,10 @@ export default function CookbookPage() {
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4">
-        {results.map((recipe) => (
-          <RecipeCard
-            key={recipe.id}
-            recipe={recipe}
-            matchSummary={getMatchSummary(recipe, cartProductIds)}
-          />
+        {results.map((recipe, index) => (
+          <div key={recipe.id} className="fade-up" style={{ transitionDelay: `${Math.min(index * 50, 400)}ms` }}>
+            <RecipeCard recipe={recipe} matchSummary={getMatchSummary(recipe, cartProductIds)} />
+          </div>
         ))}
         {results.length === 0 && (
           <p className="col-span-full text-sm text-muted-foreground">
@@ -120,6 +109,46 @@ export default function CookbookPage() {
           </p>
         )}
       </div>
+    </div>
+  );
+}
+
+function CourseTabs({
+  course,
+  onChange,
+}: {
+  course: RecipeCourse | undefined;
+  onChange: (course: RecipeCourse | undefined) => void;
+}) {
+  const options: (RecipeCourse | undefined)[] = [undefined, ...COURSES];
+
+  return (
+    <div className="flex flex-wrap gap-2">
+      {options.map((c) => {
+        const active = course === c;
+        return (
+          <button
+            key={c ?? 'all'}
+            type="button"
+            onClick={() => onChange(c === course ? undefined : c)}
+            className="relative min-h-[44px] overflow-hidden rounded-full px-4 text-sm font-semibold capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+          >
+            {active ? (
+              <motion.span
+                layoutId="course-tab-indicator"
+                className="absolute inset-0 rounded-full"
+                style={{ background: 'var(--emerald)' }}
+                transition={{ type: 'spring', bounce: 0.2, duration: 0.4 }}
+              />
+            ) : (
+              <span className="absolute inset-0 rounded-full border-2 border-border bg-card" />
+            )}
+            <span className={`relative z-10 ${active ? 'text-white' : 'text-foreground'}`}>
+              {c ? labelize(c) : 'All courses'}
+            </span>
+          </button>
+        );
+      })}
     </div>
   );
 }
@@ -139,7 +168,7 @@ function FilterChip({
       onClick={onClick}
       className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold capitalize transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
         active
-          ? 'border-primary bg-muted text-foreground'
+          ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white'
           : 'border-border bg-card text-foreground hover:border-primary/50'
       }`}
     >

@@ -48,87 +48,102 @@ export default function ShopPage() {
 
   return (
     <div className="flex flex-col gap-6 pb-20">
-      <div>
-        <h1 className="text-2xl font-extrabold">Shop</h1>
-        <p className="mt-1 text-sm text-muted-foreground">
+      <div
+        className="-mx-4 flex min-h-[200px] flex-col justify-end px-4 pb-6 lg:-mx-8 lg:px-8"
+        style={{ background: 'radial-gradient(circle at 30% 20%, var(--forest), var(--forest-deep) 70%)' }}
+      >
+        <h1 className="text-2xl font-extrabold text-white lg:text-3xl">Shop</h1>
+        <p className="mt-1 text-sm" style={{ color: 'var(--mint-light)' }}>
           {results.length} of {SEED_PRODUCTS.length} products
         </p>
       </div>
 
-      <label className="flex flex-col gap-1">
-        <span className="sr-only">Search products</span>
-        <input
-          type="search"
-          placeholder="Search products…"
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="min-h-[44px] rounded-lg border border-border bg-card px-3 text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
-        />
-      </label>
+      <div className="sticky top-[68px] z-30 -mx-4 flex flex-col gap-3 bg-card px-4 pb-3 pt-3 lg:-mx-8 lg:px-8">
+        <label className="flex items-center gap-2">
+          <span className="sr-only">Search products</span>
+          <input
+            type="search"
+            placeholder="Search products…"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            className="min-h-[44px] flex-1 rounded-lg border border-border bg-background px-3 text-foreground focus-visible:outline focus-visible:outline-2 focus-visible:outline-ring"
+          />
+          <span
+            className="flex min-h-[44px] shrink-0 items-center rounded-full px-3 text-sm font-bold text-white"
+            style={{ background: 'var(--amber)' }}
+          >
+            {results.length}
+          </span>
+        </label>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setCategory(undefined)}
-          className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-            !category
-              ? 'border-primary bg-muted text-foreground'
-              : 'border-border bg-card text-foreground hover:border-primary/50'
-          }`}
-        >
-          All categories
-        </button>
-        {CATEGORIES.map((c) => (
+        <div className="flex flex-wrap gap-2">
           <button
-            key={c}
             type="button"
-            onClick={() => setCategory(c === category ? undefined : c)}
+            onClick={() => setCategory(undefined)}
             className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-              category === c
-                ? 'border-primary bg-muted text-foreground'
+              !category
+                ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white'
                 : 'border-border bg-card text-foreground hover:border-primary/50'
             }`}
           >
-            {c}
+            All categories
           </button>
-        ))}
-      </div>
+          {CATEGORIES.map((c) => (
+            <button
+              key={c}
+              type="button"
+              onClick={() => setCategory(c === category ? undefined : c)}
+              className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                category === c
+                  ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white'
+                  : 'border-border bg-card text-foreground hover:border-primary/50'
+              }`}
+            >
+              {c}
+            </button>
+          ))}
+        </div>
 
-      <div className="flex flex-wrap gap-2">
-        <button
-          type="button"
-          onClick={() => setStore(undefined)}
-          className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-            !store
-              ? 'border-primary bg-muted text-foreground'
-              : 'border-border bg-card text-foreground hover:border-primary/50'
-          }`}
-        >
-          All stores
-        </button>
-        {STORES.map((s) => (
+        <div className="flex flex-wrap gap-2">
           <button
-            key={s}
             type="button"
-            onClick={() => setStore(s === store ? undefined : s)}
+            onClick={() => setStore(undefined)}
             className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
-              store === s
-                ? 'border-primary bg-muted text-foreground'
+              !store
+                ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white'
                 : 'border-border bg-card text-foreground hover:border-primary/50'
             }`}
           >
-            {s}
+            All stores
           </button>
-        ))}
+          {STORES.map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStore(s === store ? undefined : s)}
+              className={`min-h-[44px] rounded-full border-2 px-4 text-sm font-semibold transition-colors focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring ${
+                store === s
+                  ? 'border-[var(--emerald)] bg-[var(--emerald)] text-white'
+                  : 'border-border bg-card text-foreground hover:border-primary/50'
+              }`}
+            >
+              {s}
+            </button>
+          ))}
+        </div>
       </div>
 
       <div className="grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3 lg:gap-4 xl:grid-cols-4">
-        {results.map((product) => {
+        {results.map((product, index) => {
           const isBestValue = product.id === bestValueId;
           const conflict = hasAllergenConflict(product, profile.allergies);
           return (
-          <ProductCard
+          <div
             key={product.id}
+            className="fade-up"
+            style={{ transitionDelay: `${Math.min(index * 50, 400)}ms` }}
+          >
+          <ProductCard
             product={product}
             unitPriceLabel={formatUnitPrice(calculateUnitPrice(product))}
             reason={getRecommendationReason(product, profile, { isBestValue })}
@@ -156,8 +171,7 @@ export default function ShopPage() {
                     Details
                   </Link>
                   <Button
-                    variant="secondary"
-                    className="px-3 py-1 text-xs"
+                    className="px-3 py-1 text-xs hover:scale-[1.02]"
                     onClick={() => addItem(product.id)}
                   >
                     Add
@@ -166,6 +180,7 @@ export default function ShopPage() {
               </div>
             }
           />
+          </div>
           );
         })}
         {results.length === 0 && (

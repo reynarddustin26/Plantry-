@@ -6,7 +6,7 @@ import { SEED_PRODUCTS } from '@/lib/seed-data';
 import { getCartSummary } from '@/lib/cart';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
-import { Button } from '@/components/ui/Button';
+import { PlantryMascot } from '@/components/common/PlantryMascot';
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -17,12 +17,17 @@ export default function CartPage() {
   if (summary.lineItems.length === 0) {
     return (
       <div className="flex flex-col items-center gap-4 py-16 text-center">
-        <h1 className="text-2xl font-extrabold">Your cart is empty</h1>
+        <PlantryMascot className="h-32 w-32" />
+        <h1 className="text-2xl font-extrabold">Your basket is empty</h1>
         <p className="text-sm text-muted-foreground">
           Add products from the shop to see them here.
         </p>
-        <Link href="/shop">
-          <Button>Go to shop</Button>
+        <Link
+          href="/shop"
+          className="font-semibold hover:underline"
+          style={{ color: 'var(--emerald)' }}
+        >
+          Start shopping →
         </Link>
       </div>
     );
@@ -36,7 +41,7 @@ export default function CartPage() {
         {summary.lineItems.map(({ product, quantity, lineTotalAud }) => (
           <Card
             key={product.id}
-            className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between"
+            className="group flex flex-col gap-3 border-l-4 border-l-[var(--emerald)] sm:flex-row sm:items-center sm:justify-between"
           >
             <div className="min-w-0">
               <p className="font-semibold">{product.name}</p>
@@ -45,12 +50,13 @@ export default function CartPage() {
               </p>
             </div>
             <div className="flex items-center justify-between gap-2 sm:justify-end">
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-2">
                 <button
                   type="button"
                   aria-label={`Decrease quantity of ${product.name}`}
                   onClick={() => setQuantity(product.id, quantity - 1)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-lg font-semibold hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border-2 text-lg font-semibold hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  style={{ borderColor: 'var(--emerald)' }}
                 >
                   −
                 </button>
@@ -59,7 +65,8 @@ export default function CartPage() {
                   type="button"
                   aria-label={`Increase quantity of ${product.name}`}
                   onClick={() => setQuantity(product.id, quantity + 1)}
-                  className="flex h-11 w-11 items-center justify-center rounded-lg border border-border text-lg font-semibold hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  className="flex h-11 w-11 items-center justify-center rounded-full border-2 text-lg font-semibold hover:bg-muted focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                  style={{ borderColor: 'var(--emerald)' }}
                 >
                   +
                 </button>
@@ -71,7 +78,7 @@ export default function CartPage() {
                 type="button"
                 aria-label={`Remove ${product.name} from cart`}
                 onClick={() => removeItem(product.id)}
-                className="flex h-11 w-11 items-center justify-center rounded-lg text-danger hover:bg-danger-bg focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+                className="flex h-11 w-11 items-center justify-center rounded-lg text-danger opacity-100 transition-opacity hover:bg-danger-bg focus-visible:opacity-100 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring sm:opacity-0 sm:group-hover:opacity-100"
               >
                 ✕
               </button>
@@ -85,18 +92,21 @@ export default function CartPage() {
           <p className="text-sm text-muted-foreground">
             {summary.itemCount} item{summary.itemCount === 1 ? '' : 's'}
           </p>
-          <p className="text-xs text-muted-foreground">
-            Nutrition totals arrive once product nutrition data is available
-            (Phase 6).
-          </p>
         </div>
-        <p className="text-xl font-bold text-primary">
+        <p className="text-xl font-bold" style={{ color: 'var(--forest)' }}>
           {formatAud(summary.totalPriceAud)}
         </p>
       </Card>
 
-      <Link href="/optimiser">
-        <Button variant="secondary">Optimise my basket</Button>
+      <Link
+        href="/optimiser"
+        className="flex min-h-[52px] items-center justify-center rounded-xl text-base font-bold transition-[filter] hover:brightness-110"
+        style={{
+          background: 'linear-gradient(135deg, var(--amber), var(--gold))',
+          color: 'var(--forest)',
+        }}
+      >
+        Optimise my basket
       </Link>
 
       <Link href="/shop" className="text-sm text-muted-foreground hover:text-primary">
