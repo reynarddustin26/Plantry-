@@ -50,3 +50,34 @@ export function findBestValueId(products: Product[], profile: DemoProfile): stri
 
   return bestId;
 }
+
+// A real, deterministic personalization score — never a proxy for facts we
+// don't have. Nutrition-per-100g is null for every product in the current
+// local catalog (Open-Food-Facts-enriched nutrition lives in Supabase,
+// unlinked from these local ids — see PLAN.md Section G), so this
+// deliberately does NOT score on protein/calories the way a "for your
+// muscle goal" feed might imply — that would be inventing a signal from
+// data that isn't there. It scores on what's actually real: unit price
+// (weighted harder under a budget-first strategy) and preferred-store
+// match, behind the same allergen hard gate as everything else.
+export function personalScore(product: Product, profile: DemoProfile): number {
+  if (!isRecommendable(product, profile)) return -Infinity;
+
+  let score = 0;
+  const unitPrice = calculateUnitPrice(product);
+  if (unitPrice) {
+    const priceWeight = profile.shoppingStrategy === 'budget_first' ? 150 : 100;
+    score += priceWeight / (unitPrice.amount + 1);
+  }
+  if (profile.preferredStores.includes(product.store)) {
+    score += 10;
+  }
+
+  return score;
+}
+
+// Highest personalScore first. Never surfaces an allergen-conflicted
+// product above a safe one (personalScore's hard gate sorts those last).
+export function rankByPersonalScore(products: Product[], profile: DemoProfile): Product[] {
+  return [...products].sort((a, b) => personalScore(b, profile) - personalScore(a, profile));
+}

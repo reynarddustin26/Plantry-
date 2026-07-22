@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { motion } from 'framer-motion';
 import { RecipeCard } from '@/components/common/RecipeCard';
+import { PlantryMascot } from '@/components/common/PlantryMascot';
 import { RECIPES } from '@/lib/recipes-data';
 import { filterRecipes, getMatchSummary } from '@/lib/recipeMatching';
 import { useCartStore } from '@/store/cartStore';
@@ -104,9 +105,14 @@ export default function CookbookPage() {
           </div>
         ))}
         {results.length === 0 && (
-          <p className="col-span-full text-sm text-muted-foreground">
-            No recipes match your filters.
-          </p>
+          <div className="col-span-full flex flex-col items-center gap-2 py-10 text-center">
+            <PlantryMascot className="h-16 w-16" />
+            <p className="text-sm text-muted-foreground">
+              {canMakeNow
+                ? 'Add more items to your cart to unlock recipes.'
+                : 'No recipes match your filters.'}
+            </p>
+          </div>
         )}
       </div>
     </div>

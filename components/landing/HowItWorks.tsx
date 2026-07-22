@@ -1,9 +1,9 @@
 const STEPS = [
-  { title: 'Tell Plantry your goal', desc: 'Budget, health, quick, or convenience — pick what matters this week.' },
-  { title: 'Choose your stores', desc: 'Coles, Woolworths, IGA — one or all three.' },
-  { title: 'Compare real products', desc: 'Real AU prices, unit pricing, and allergen checks side by side.' },
-  { title: 'Build your basket', desc: 'Add what you need — allergy conflicts are blocked automatically.' },
-  { title: 'See what you saved', desc: 'Every swap and every dollar, explained, not just a number.' },
+  { title: 'Tell us your goals', desc: 'Budget, diet, and allergies — set once, applied everywhere.' },
+  { title: 'We compare the stores', desc: 'Real Coles, Woolworths and IGA prices, side by side.' },
+  { title: 'AI explains your options', desc: 'Every ranking is scored by real data, then explained in plain English.' },
+  { title: 'Cook from your cart', desc: 'Recipes unlock automatically as you shop.' },
+  { title: 'See exactly what you saved', desc: 'Time and money, itemised — not just a number.' },
 ];
 
 export function HowItWorks() {

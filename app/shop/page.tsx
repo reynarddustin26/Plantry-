@@ -9,7 +9,8 @@ import { SEED_PRODUCTS, CATEGORIES } from '@/lib/seed-data';
 import { filterProducts } from '@/lib/search';
 import { calculateUnitPrice, formatUnitPrice } from '@/lib/nutrition';
 import { hasAllergenConflict } from '@/lib/allergens';
-import { findBestValueId, getRecommendationReason } from '@/lib/scoring';
+import { findBestValueId, getRecommendationReason, rankByPersonalScore } from '@/lib/scoring';
+import { useAuthUser } from '@/lib/hooks/useAuthUser';
 import { useCartStore } from '@/store/cartStore';
 import { useProfileStore } from '@/store/profileStore';
 import type { Store } from '@/lib/types';
@@ -21,15 +22,25 @@ export default function ShopPage() {
   const router = useRouter();
   const addItem = useCartStore((s) => s.addItem);
   const profile = useProfileStore((s) => s.profile);
+  const user = useAuthUser();
   const [query, setQuery] = useState('');
   const [category, setCategory] = useState<string | undefined>();
   const [store, setStore] = useState<Store | undefined>();
   const [compareIds, setCompareIds] = useState<string[]>([]);
 
-  const results = useMemo(
+  const filtered = useMemo(
     () => filterProducts(SEED_PRODUCTS, { query, category, store }),
     [query, category, store],
   );
+
+  // Signed-in users get a real personalization signal (unit price + store
+  // preference, per lib/scoring.ts — never fabricated nutrition scoring,
+  // see that file's comment on why). Signed-out/demo users see price order,
+  // which is at least a real, understandable default rather than CSV order.
+  const results = useMemo(() => {
+    if (user) return rankByPersonalScore(filtered, profile);
+    return [...filtered].sort((a, b) => a.priceAud - b.priceAud);
+  }, [filtered, profile, user]);
 
   const bestValueId = useMemo(
     () => findBestValueId(results, profile),
@@ -49,7 +60,7 @@ export default function ShopPage() {
   return (
     <div className="flex flex-col gap-6 pb-20">
       <div
-        className="-mx-4 flex min-h-[200px] flex-col justify-end px-4 pb-6 lg:-mx-8 lg:px-8"
+        className="full-bleed flex min-h-[200px] flex-col justify-end px-4 pb-6 sm:px-6"
         style={{ background: 'radial-gradient(circle at 30% 20%, var(--forest), var(--forest-deep) 70%)' }}
       >
         <h1 className="text-2xl font-extrabold text-white lg:text-3xl">Shop</h1>
@@ -57,6 +68,15 @@ export default function ShopPage() {
           {results.length} of {SEED_PRODUCTS.length} products
         </p>
       </div>
+
+      {user && (
+        <p
+          className="rounded-lg px-3 py-2 text-sm font-semibold"
+          style={{ background: 'var(--surface-light)', color: 'var(--forest)' }}
+        >
+          Sorted for your goals — best value in your preferred stores first.
+        </p>
+      )}
 
       <div className="sticky top-[68px] z-30 -mx-4 flex flex-col gap-3 bg-card px-4 pb-3 pt-3 lg:-mx-8 lg:px-8">
         <label className="flex items-center gap-2">
@@ -184,8 +204,8 @@ export default function ShopPage() {
           );
         })}
         {results.length === 0 && (
-          <p className="col-span-full text-sm text-muted-foreground">
-            No products match your filters.
+          <p className="col-span-full text-center text-sm text-muted-foreground">
+            Try a different search.
           </p>
         )}
       </div>

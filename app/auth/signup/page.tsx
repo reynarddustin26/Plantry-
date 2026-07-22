@@ -10,7 +10,7 @@ export default async function SignUpPage() {
     const {
       data: { user },
     } = await supabase.auth.getUser();
-    if (user) redirect('/profile');
+    if (user) redirect('/dashboard');
   }
 
   return (

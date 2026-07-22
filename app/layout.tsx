@@ -4,6 +4,7 @@ import { Header } from '@/components/layout/Header';
 import { Footer } from '@/components/layout/Footer';
 import { CartHydrator } from '@/components/common/CartHydrator';
 import { ScrollAnimationProvider } from '@/components/common/ScrollAnimationProvider';
+import { AIChat } from '@/components/chat/AIChat';
 
 export const metadata: Metadata = {
   title: 'Plantry',
@@ -31,6 +32,7 @@ export default function RootLayout({
           {children}
         </main>
         <Footer />
+        <AIChat />
       </body>
     </html>
   );

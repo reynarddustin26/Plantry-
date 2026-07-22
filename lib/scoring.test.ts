@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { findBestValueId, getRecommendationReason, isRecommendable } from './scoring';
+import { findBestValueId, getRecommendationReason, isRecommendable, rankByPersonalScore } from './scoring';
 import type { DemoProfile, Product } from './types';
 
 function makeProduct(overrides: Partial<Product> = {}): Product {
@@ -93,5 +93,34 @@ describe('findBestValueId', () => {
 
   it('returns null for an empty product list', () => {
     expect(findBestValueId([], profile)).toBeNull();
+  });
+});
+
+describe('rankByPersonalScore', () => {
+  it('ranks a cheaper-per-unit product above a pricier one', () => {
+    const cheap = makeProduct({ id: 'cheap', packageSize: '1kg', priceAud: 2 });
+    const pricey = makeProduct({ id: 'pricey', packageSize: '1kg', priceAud: 8 });
+    const ranked = rankByPersonalScore([pricey, cheap], profile);
+    expect(ranked.map((p) => p.id)).toEqual(['cheap', 'pricey']);
+  });
+
+  it('never surfaces an allergen-conflicted product above a safe one', () => {
+    const cheapButConflicts = makeProduct({
+      id: 'conflict',
+      packageSize: '1kg',
+      priceAud: 1,
+      allergens: ['dairy'],
+    });
+    const safe = makeProduct({ id: 'safe', packageSize: '1kg', priceAud: 5, allergens: [] });
+    const ranked = rankByPersonalScore([cheapButConflicts, safe], profile);
+    expect(ranked[0].id).toBe('safe');
+  });
+
+  it('does not mutate the input array', () => {
+    const a = makeProduct({ id: 'a', packageSize: '1kg', priceAud: 8 });
+    const b = makeProduct({ id: 'b', packageSize: '1kg', priceAud: 2 });
+    const input = [a, b];
+    rankByPersonalScore(input, profile);
+    expect(input).toEqual([a, b]);
   });
 });

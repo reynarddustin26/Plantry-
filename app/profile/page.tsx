@@ -3,6 +3,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import { signOut } from '@/lib/actions/auth';
 import { ProfileForm } from '@/components/profile/ProfileForm';
+import { ProfileProgress } from '@/components/profile/ProfileProgress';
 import { Button } from '@/components/ui/Button';
 
 export default async function ProfilePage() {
@@ -65,6 +66,8 @@ export default async function ProfilePage() {
           </Button>
         </form>
       </div>
+
+      <ProfileProgress weeklyBudget={profile.weekly_budget} proteinTarget={profile.protein_target} />
 
       <ProfileForm
         profile={profile}

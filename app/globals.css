@@ -36,10 +36,20 @@
   --touch-min: 44px;
 }
 
+/* .full-bleed's 100vw includes the vertical scrollbar's own width in most
+   browsers, so it's a few px wider than the actual visible viewport
+   whenever a scrollbar is present — this clips that harmless sliver instead
+   of letting it force horizontal scroll on the whole page. Needs to be on
+   both html and body: the root scrolling box is html, not body. */
+html {
+  overflow-x: hidden;
+}
+
 body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans);
+  overflow-x: hidden;
 }
 
 /*
@@ -59,6 +69,20 @@ body {
   --gold: #f9c05b;
   --surface-light: #f4f7f5;
   --text-dark: #072a20;
+}
+
+/*
+  True full-bleed escape hatch. `main` is intentionally max-width-constrained
+  (readability for normal page content), so a plain negative margin only
+  cancels main's own padding — it can't reach past main's max-width to the
+  real viewport edge. This does: 100vw + centering via left:50%/-50vw margin
+  escapes ANY ancestor width constraint, not just padding.
+*/
+.full-bleed {
+  width: 100vw;
+  position: relative;
+  left: 50%;
+  margin-left: -50vw;
 }
 
 .hero-gradient-bg {
@@ -116,6 +140,7 @@ body {
 @media (prefers-reduced-motion: reduce) {
   .hero-orb,
   .mascot-float,
+  .chat-pulse-ring,
   .fade-up {
     animation: none !important;
     transition: none !important;
@@ -191,6 +216,16 @@ body {
 .card-hover:hover {
   transform: translateY(-4px);
   box-shadow: 0 12px 32px rgba(7, 42, 32, 0.12);
+}
+
+/* Chat widget's attention-drawing pulse ring, shown only while closed. */
+@keyframes chat-pulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.5); }
+  70% { box-shadow: 0 0 0 12px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+.chat-pulse-ring {
+  animation: chat-pulse 2s infinite;
 }
 
 /* Allergy warnings must never rely on color alone: icon + text + border. */

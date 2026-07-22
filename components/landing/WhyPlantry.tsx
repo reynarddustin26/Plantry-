@@ -18,7 +18,7 @@ const FEATURES = [
 
 export function WhyPlantry() {
   return (
-    <section className="-mx-4 px-4 py-14 lg:-mx-8 lg:px-8" style={{ background: 'var(--forest)' }}>
+    <section className="full-bleed px-4 py-14 sm:px-6" style={{ background: 'var(--forest)' }}>
       <h2 className="fade-up mb-8 text-center text-2xl font-extrabold text-white">Why Plantry</h2>
       <div className="mx-auto grid max-w-5xl grid-cols-1 gap-4 sm:grid-cols-3">
         {FEATURES.map((feature, i) => (

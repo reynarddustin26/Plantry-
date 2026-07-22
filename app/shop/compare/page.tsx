@@ -5,6 +5,7 @@ import { Card } from '@/components/ui/Card';
 import { AllergyWarning } from '@/components/common/AllergyWarning';
 import { AddToCartButton } from '@/components/common/AddToCartButton';
 import { ProductRecommendationInfo } from '@/components/common/ProductRecommendationInfo';
+import { CompareAiVerdict } from '@/components/common/CompareAiVerdict';
 
 export default async function ComparePage({
   searchParams,
@@ -52,6 +53,8 @@ export default async function ComparePage({
           ))}
         </div>
       )}
+
+      {products.length >= 2 && <CompareAiVerdict products={products} />}
     </div>
   );
 }

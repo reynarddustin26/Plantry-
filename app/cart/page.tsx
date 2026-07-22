@@ -1,5 +1,6 @@
 'use client';
 
+import { useState } from 'react';
 import Link from 'next/link';
 import { useCartStore } from '@/store/cartStore';
 import { SEED_PRODUCTS } from '@/lib/seed-data';
@@ -7,12 +8,14 @@ import { getCartSummary } from '@/lib/cart';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
+import { CartOptimiserPanel } from '@/components/common/CartOptimiserPanel';
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
   const setQuantity = useCartStore((s) => s.setQuantity);
   const removeItem = useCartStore((s) => s.removeItem);
   const summary = getCartSummary(items, SEED_PRODUCTS);
+  const [showOptimiser, setShowOptimiser] = useState(false);
 
   if (summary.lineItems.length === 0) {
     return (
@@ -98,8 +101,9 @@ export default function CartPage() {
         </p>
       </Card>
 
-      <Link
-        href="/optimiser"
+      <button
+        type="button"
+        onClick={() => setShowOptimiser((prev) => !prev)}
         className="flex min-h-[52px] items-center justify-center rounded-xl text-base font-bold transition-[filter] hover:brightness-110"
         style={{
           background: 'linear-gradient(135deg, var(--amber), var(--gold))',
@@ -107,7 +111,9 @@ export default function CartPage() {
         }}
       >
         Optimise my basket
-      </Link>
+      </button>
+
+      {showOptimiser && <CartOptimiserPanel onClose={() => setShowOptimiser(false)} />}
 
       <Link href="/shop" className="text-sm text-muted-foreground hover:text-primary">
         ← Continue shopping

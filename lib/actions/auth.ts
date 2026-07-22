@@ -31,7 +31,7 @@ export async function signUp(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/profile');
+  redirect('/onboarding/setup');
 }
 
 export async function signIn(
@@ -57,7 +57,7 @@ export async function signIn(
   }
 
   revalidatePath('/', 'layout');
-  redirect('/profile');
+  redirect('/dashboard');
 }
 
 export async function signOut() {

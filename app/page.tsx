@@ -5,9 +5,13 @@ import { motion } from 'framer-motion';
 import { Button } from '@/components/ui/Button';
 import { SelectableCard } from '@/components/ui/Card';
 import { Hero } from '@/components/landing/Hero';
+import { ProblemSolution } from '@/components/landing/ProblemSolution';
+import { AIDemo } from '@/components/landing/AIDemo';
+import { FeaturesGrid } from '@/components/landing/FeaturesGrid';
 import { HowItWorks } from '@/components/landing/HowItWorks';
 import { WhyPlantry } from '@/components/landing/WhyPlantry';
 import { StatsBar } from '@/components/landing/StatsBar';
+import { HackathonNote } from '@/components/landing/HackathonNote';
 import { useProfileStore } from '@/store/profileStore';
 import { staggerContainer } from '@/lib/motion';
 import type { Intent } from '@/lib/types';
@@ -76,9 +80,13 @@ export default function Home() {
         </div>
       </div>
 
+      <ProblemSolution />
+      <AIDemo />
+      <FeaturesGrid />
       <HowItWorks />
       <WhyPlantry />
       <StatsBar />
+      <HackathonNote />
     </div>
   );
 }

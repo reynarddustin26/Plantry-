@@ -9,7 +9,7 @@ const STATS = [
 export function StatsBar() {
   return (
     <section
-      className="fade-up -mx-4 px-4 py-10 lg:-mx-8 lg:px-8"
+      className="fade-up full-bleed px-4 py-10 sm:px-6"
       style={{ background: 'var(--emerald)' }}
     >
       <div className="mx-auto grid max-w-5xl grid-cols-3 gap-4 text-center">

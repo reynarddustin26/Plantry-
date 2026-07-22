@@ -882,3 +882,186 @@ connected, ran the complete gate suite one more time end to end:
   header — re-screenshotted a moment later and it was a paint-timing
   artifact of the very first frame, not a real layout bug — confirmed via
   `getBoundingClientRect()` showing the hero genuinely reaches `top: 0`).
+
+---
+
+## Section K — Phase 9 Execution (Product Value, AI Visibility, Chat)
+
+### Critical flag before this phase started: no live AI, wrong model name
+Confirmed again (still true): no `ANTHROPIC_API_KEY` in `.env.local`. Every AI
+touchpoint below runs correctly in its deterministic-fallback state — that's
+the actual current behavior, not a hypothetical. Told the user directly
+before starting, since the requested chat demo script ("open chat and
+type...") would not have produced a real Claude answer as-is. Also: the
+chat spec's model id `claude-sonnet-4-6` isn't real — used `claude-sonnet-5`
+instead (overridable via `ANTHROPIC_CHAT_MODEL`).
+
+### Landing page — rewritten again for conversion
+New hero copy ("Your grocery list, optimised by AI"), real signup/demo CTAs
+(`/auth/signup`, `/demo-profile` — replacing the previous scroll-to-picker
+buttons; the intent-picker section itself is untouched and still reachable
+by scrolling, so the E2E journey that clicks its "Health"/"Continue"
+buttons is unaffected — Playwright doesn't require an element to be in the
+initial viewport, only genuinely rendered). Added `ProblemSolution.tsx`,
+`AIDemo.tsx`, `FeaturesGrid.tsx`, `HackathonNote.tsx`; `HowItWorks.tsx`
+copy rewritten to be benefit-led — but corrected "AI ranks your options" to
+"AI explains your options" in the process, because ranking is actually done
+by `lib/scoring.ts`'s deterministic code and the AI only explains it; the
+original spec phrasing would have contradicted this app's own core
+architecture principle.
+
+**`AIDemo.tsx` is an explicitly-labeled scripted example**, not a live
+query — a "typing" animation runs through a fixed, made-up scenario
+("Greek yoghurt wins here — 20g protein at $0.29/100g...") with an "Example
+— not a live query" badge. These specific numbers aren't a claim about
+today's actual catalog; it's illustrating what the real feature (built
+below) does, the same way any product demo video is staged.
+
+### Full-bleed bug found and fixed (user-reported, confirmed via DOM measurement)
+The `-mx-4 lg:-mx-8` breakout used since Phase 8 only cancels `main`'s own
+padding — it can't escape `main`'s `max-w-7xl` (1280px) constraint. Verified
+with `getBoundingClientRect()`: at a 1309px-wide viewport, the hero's
+rendered width was exactly 1280px, matching `main`, not the viewport — a
+real bug, not a screenshot-reading error this time. Added a proper
+`.full-bleed` CSS utility (`width:100vw; position:relative; left:50%;
+margin-left:-50vw`) to `globals.css`, which escapes any ancestor width
+constraint, and applied it to every full-bleed section (hero, AI demo,
+Why Plantry, stats bar, hackathon note, shop's dark header strip — not the
+sticky filter bar, which can't combine `position:sticky` and the
+full-bleed technique's `position:relative`, and doesn't need to be
+edge-to-edge anyway, it's a functional control not a marketing section).
+`100vw` includes the scrollbar's own width in most browsers, which was
+then causing a few px of real horizontal page overflow — fixed with
+`overflow-x: hidden` on both `html` and `body` (needs to be on `html`,
+not just `body` — the root scrolling box is `html`).
+
+### AI visibility across the app
+- **Shop cards**: already showed deterministic per-product reasons via
+  `lib/scoring.ts`'s `getRecommendationReason` (built Phase 3) — this
+  requirement was already met by existing infrastructure, not new work.
+- **Product detail** (`components/common/ProductAiPanel.tsx`): "Ask AI to
+  explain this choice" button, calls `/api/ai/explain` with real computed
+  facts, typewriter-reveals the response (a presentation effect over
+  already-fully-arrived text — `/api/ai/explain` returns complete JSON, not
+  a token stream, so this isn't a claim that tokens are arriving live),
+  "Powered by Claude" / "Deterministic explanation" attribution, cached in
+  `sessionStorage` per product id.
+- **Compare page** (`components/common/CompareAiVerdict.tsx`): picks a
+  winner via real deterministic code (cheapest safe unit price among the
+  compared products — the AI never picks it), same typewriter + cache
+  pattern, states the real budget and protein target the verdict is
+  "based on" (the target itself is a real profile field even though
+  per-product protein content isn't — never conflates the two).
+- **Cart optimiser** (`components/common/CartOptimiserPanel.tsx`): the
+  existing "Optimise my basket" button now opens an inline panel (reusing
+  Phase 4's `findSwapCandidates`/real swap data) with Accept/Skip per
+  swap and a running total of *accepted* savings in amber. The standalone
+  `/optimiser` page still exists, just no longer linked from this button.
+
+### `personalScore` — a real, honest personalization signal
+`lib/scoring.ts` gained `personalScore`/`rankByPersonalScore` (TDD, 3 new
+tests). The brief said this "already exists" — it didn't. Built it to score
+on unit price (weighted harder under `budget_first`) and preferred-store
+match, behind the same allergen hard gate as everything else — deliberately
+NOT on protein/calories, because nutrition-per-100g is null for every
+product in the local catalog the frontend actually reads (Open-Food-Facts
+enriched data lives in Supabase, unlinked — see Section G). Scoring on data
+that doesn't exist would be inventing a signal, not personalizing on one.
+Wired into `/shop` (signed-in users see `rankByPersonalScore` order + a
+banner; signed-out users see price order) via a new `useAuthUser` hook
+(`lib/hooks/useAuthUser.ts`) since `/shop` is a pure Client Component with
+no server-side auth context. **The shop banner text was adapted from the
+brief's "Sorted for your goals — high protein, under $80/week" to "Sorted
+for your goals — best value in your preferred stores first"** — the
+original wording claims a protein-based sort that isn't what's actually
+happening; the adapted copy accurately describes the real criteria.
+
+### Dashboard (`app/dashboard/page.tsx`, new)
+Auth-gated. Fetches the real Supabase profile (+ allergies) server-side,
+constructs a `DemoProfile`-shaped object from it (falling back to
+`DEMO_PROFILE`'s balanced defaults only for the scoring computation's
+internal use — the UI itself shows "not set" for null fields, never
+presents a fallback number as if it were the user's real setting). Budget
+progress bar, "meals you can make now" (real, `lib/recipeMatching.ts`),
+"this week's savings" (real, `lib/optimisation.ts`) live in
+`DashboardCartInsights.tsx` since cart state is client-only (Zustand);
+"recommended basket" (top 5 via `rankByPersonalScore`) is server-rendered.
+`signIn`/`signUp` in `lib/actions/auth.ts` now redirect to `/dashboard` /
+`/onboarding/setup` respectively (was `/profile` for both).
+
+### Profile page progress (adapted, not fabricated)
+Brief asked for "Meals planned: X/7 days" and "protein progress" rings.
+Neither is honestly computable: there's no meal-planning/calendar feature
+anywhere in this app (no real data source for "planned" meals), and there's
+no food-diary/consumption-log feature either (so "protein consumed this
+week" doesn't exist as real data — only the *target* does, which is a real
+profile field). `components/profile/ProfileProgress.tsx` shows: budget
+progress (real, cart spend vs. `weekly_budget`), the protein *target* alone
+(real, no fabricated "progress" percentage against it), and "recipes you
+can make right now" (real, replacing "meals planned" with something this
+app can actually measure).
+
+### Onboarding wizard (`app/onboarding/setup/page.tsx` + `OnboardingWizard.tsx`, new)
+3 steps: goals (client-side only — **no `goals` column exists in the
+`profiles` schema**, so this shapes the step-3 preview copy/context, not
+saved data — documented rather than silently dropped or given a fake
+column), budget slider + allergen/store checkboxes (real, saved via new
+`lib/actions/onboarding.ts` → `profiles`/`profile_allergies`, reusing the
+same tables Phase 5 already built), and a live preview using
+`rankByPersonalScore` against the in-progress selections before final
+submit. Distinct route from the existing `/onboarding/constraints` (Phase
+1's local/Demo-Profile-only flow, untouched) — these are two genuinely
+different flows (local vs. real account) and collapsing them would have
+broken the Demo Profile's zero-network guarantee.
+
+### Chat assistant (`/api/ai/chat` + `components/chat/AIChat.tsx`, new)
+Floating widget (amber circle, pulsing ring when closed, mascot icon) on
+every page via root layout. Streams from Anthropic's SSE Messages API,
+re-parsing their `content_block_delta` frames into plain text chunks so the
+frontend's `ReadableStream` reader stays simple. Falls back to one
+complete deterministic message (still delivered as a one-chunk stream, so
+the frontend has one code path either way) when no API key, on timeout
+(20s), or on any upstream error — never a raw error to the user. Rate
+limited to 30/hour via the same `lib/ai/rateLimiter.ts` from Phase 7, a
+separate `chat:` key namespace. System prompt used verbatim as specified.
+`useChatUserContext` (`components/chat/useChatUserContext.ts`) passes the
+real signed-in profile when available (lazily fetched from Supabase) or
+the real Demo Profile values otherwise — never fabricated context.
+
+### Bugs found and fixed during this phase
+- **React Compiler ESLint errors** (`react-hooks/immutability`,
+  `react-hooks/set-state-in-effect`) in `AIChat.tsx`,
+  `useChatUserContext.ts`, `CompareAiVerdict.tsx`: a mutable `accumulated`
+  closure variable needed to be a real `useRef` (lint caught a genuine bug
+  here — I'd renamed the variable to `accumulatedRef` without actually
+  declaring it via `useRef()`, which would have been a runtime
+  `ReferenceError`); synchronous `setState` calls in early-return branches
+  of effects were moved inside the async IIFE alongside the other state
+  updates in the same function, matching the pattern the linter already
+  accepted elsewhere in the same file.
+- **Recurring dev-mode-only hydration warning** on `.fade-up` elements
+  (first seen in Phase 8.5, still appeared in this phase's live browser
+  check after the earlier `requestAnimationFrame` fix): increased the
+  defer from one animation frame to a 100ms `setTimeout`, which resolved it
+  in a real browser recheck. Confirmed this is Next.js 16 dev mode's extra
+  Suspense/SegmentView instrumentation misreporting a normal post-mount DOM
+  update, not a real hydration bug — production builds don't carry that
+  instrumentation layer, and every functional test (unit, E2E, manual) was
+  green even before this fix.
+- **User-reported issues, both verified against real DOM measurements before
+  and after, not just screenshots**: (1) hero "not rendering" — reproduced
+  transiently but not on a clean reload with cache bypassed, most likely
+  caught mid-edit while multiple landing files were being rewritten
+  simultaneously; (2) full-bleed sections not reaching the true viewport
+  edge past 1280px — this one was real, see above.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (20 routes now, including `/dashboard`,
+  `/onboarding/setup`, `/api/ai/chat`), `npm run test` ✓ (99/99 — 3 new for
+  `rankByPersonalScore`), `npm run e2e` ✓ (6/6).
+- Live-checked via Chrome DevTools MCP: `/`, `/shop` (accessibility snapshot
+  confirmed correct price-ascending order signed-out, real allergen reasons
+  on every conflicting product, "Best value" reason on the cheapest item),
+  `/cart`, `/profile` (correctly redirects to sign-in) — zero console
+  errors on any of them except the pre-existing, unrelated missing
+  `/favicon.ico` (a 404, not a JS error, not introduced this phase).

@@ -1,16 +1,13 @@
 'use client';
 
+import Link from 'next/link';
 import { Button } from '@/components/ui/Button';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
-
-function scrollToId(id: string) {
-  document.getElementById(id)?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-}
 
 export function Hero() {
   return (
     <section
-      className="hero-gradient-bg relative -mx-4 -mt-[96px] flex min-h-screen flex-col justify-center overflow-hidden px-4 pb-16 pt-[96px] lg:-mx-8 lg:-mt-[112px] lg:px-8 lg:pt-[112px]"
+      className="hero-gradient-bg full-bleed -mt-[96px] flex min-h-screen flex-col justify-center overflow-hidden px-4 pb-16 pt-[96px] sm:px-6 lg:-mt-[112px] lg:pt-[112px]"
     >
       <div className="hero-orb hero-orb-1" />
       <div className="hero-orb hero-orb-2" />
@@ -30,43 +27,48 @@ export function Hero() {
             🌱 AI-powered grocery
           </span>
 
-          <h1 className="text-4xl font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-[64px]">
-            Shop smarter.
+          <h1 className="text-4xl font-extrabold leading-[1.1] text-white sm:text-5xl lg:text-[56px]">
+            Your grocery list,
             <br />
-            <span style={{ color: 'var(--amber)' }}>Eat better.</span>
+            <span style={{ color: 'var(--amber)' }}>optimised by AI.</span>
           </h1>
 
           <p className="max-w-md text-base lg:text-lg" style={{ color: 'var(--mint-light)' }}>
-            Compare prices, dodge allergens, and turn your basket into a week
-            of meals.
+            Tell Plantry your budget, goals and allergies. It compares Coles,
+            Woolworths and IGA, builds your basket, and turns it into a week
+            of meals — automatically.
           </p>
 
           <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
-            <Button onClick={() => scrollToId('build-basket')}>Build my basket</Button>
-            <button
-              type="button"
-              onClick={() => scrollToId('how-it-works')}
+            <Link href="/auth/signup">
+              <Button>Get started free</Button>
+            </Link>
+            <Link
+              href="/demo-profile"
               className="flex min-h-[44px] items-center gap-1 rounded-lg px-3 text-sm font-semibold hover:underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-white"
               style={{ color: 'var(--mint-light)' }}
             >
-              See how it works →
-            </button>
+              See a live demo →
+            </Link>
           </div>
+
+          <p className="text-xs" style={{ color: 'var(--mint-light)', opacity: 0.75 }}>
+            No credit card. No account needed to try.
+          </p>
         </div>
 
         <PlantryMascot className="mascot-float h-40 w-40 shrink-0 lg:h-56 lg:w-56" />
       </div>
 
-      <button
-        type="button"
-        onClick={() => scrollToId('how-it-works')}
+      <a
+        href="#build-basket"
         aria-label="Scroll to how it works"
         className="scroll-indicator absolute bottom-6 left-1/2 z-10 -translate-x-1/2 text-white/40 hover:text-white/70"
       >
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
           <path d="M12 5v14M5 12l7 7 7-7" strokeLinecap="round" strokeLinejoin="round" />
         </svg>
-      </button>
+      </a>
     </section>
   );
 }

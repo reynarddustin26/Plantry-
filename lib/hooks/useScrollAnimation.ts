@@ -11,14 +11,16 @@ export function useScrollAnimation() {
   const pathname = usePathname();
 
   useEffect(() => {
-    // Deferred a frame so the observer's very first callback (which fires
-    // near-instantly for elements already in view, e.g. product cards above
-    // the fold) never lands in the same tick as React/Next dev mode's
-    // post-hydration diffing — that race otherwise gets misreported as a
-    // hydration mismatch even though it's a normal post-mount DOM update.
+    // Deferred well past mount (a single requestAnimationFrame wasn't
+    // reliably enough — Next.js 16 dev mode's extra Suspense/SegmentView
+    // instrumentation can still misreport the resulting class change as a
+    // hydration mismatch even though it's a normal post-mount DOM update
+    // happening well after real hydration commits). A short timeout is a
+    // more conservative margin; this doesn't affect production builds,
+    // which don't carry that dev-only instrumentation layer at all.
     let cleanupObserver: (() => void) | undefined;
 
-    const raf = requestAnimationFrame(() => {
+    const timeout = setTimeout(() => {
       const elements = document.querySelectorAll<HTMLElement>('.fade-up:not(.visible)');
       if (elements.length === 0) return;
 
@@ -41,10 +43,10 @@ export function useScrollAnimation() {
 
       elements.forEach((el) => observer.observe(el));
       cleanupObserver = () => observer.disconnect();
-    });
+    }, 100);
 
     return () => {
-      cancelAnimationFrame(raf);
+      clearTimeout(timeout);
       cleanupObserver?.();
     };
   }, [pathname]);
