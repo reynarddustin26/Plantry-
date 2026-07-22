@@ -1689,3 +1689,20 @@ grid, comparison winner, or recipe pages at all.
   real (non-`DEMO_KEY`) USDA API key, or manually sourcing AU-specific
   nutrition panels for products a global database doesn't confidently
   match — both out of reach from this session.
+
+### Follow-up: re-run with a real USDA API key
+A real `USDA_API_KEY` was added to `.env.local`. `scripts/backfill-nutrition.ts`
+already read `process.env.USDA_API_KEY` (falling back to `DEMO_KEY` only if
+unset — see its line `const USDA_API_KEY = process.env.USDA_API_KEY ||
+'DEMO_KEY';`), so no code change was needed, only a re-run.
+
+- Re-ran against the 32 still-missing products: 12 more got a confident
+  match (2 via Open Food Facts, 10 via USDA — no rate limiting this time).
+  Coverage is now 33/53 products with real `nutrition_per_100g` data, up
+  from 21/53. The remaining 20 (e.g. Wholemeal Bread Loaf, Roma Tomatoes,
+  Avocado (each), Protein Bar Box, Frozen Berries, Home Brand White Bread)
+  genuinely failed the confidence-match guard — every significant word of
+  the local name must appear in the candidate, and these didn't clear that
+  bar in either database. Left null, not zero or fabricated.
+- No source files changed by this run (it's a data-only backfill), so
+  this update to PLAN.md is the only diff in this commit.
