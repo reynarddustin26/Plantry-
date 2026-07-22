@@ -21,6 +21,14 @@ export function ProductAiPanel({ product }: { product: Product }) {
   const [grounded, setGrounded] = useState(false);
   const typedFromCache = useRef(false);
 
+  // Always real and always visible — the panel must never show empty while
+  // waiting for a click. The AI (when it responds) elaborates on this same
+  // deterministic fact, it never replaces it.
+  const unitPrice = calculateUnitPrice(product);
+  const deterministicReason =
+    getRecommendationReason(product, profile, { isBestValue: false }) ??
+    `${formatUnitPrice(unitPrice)} in ${product.category}.`;
+
   // Typewriter reveal of already-fetched text — this app's /api/ai/explain
   // returns a complete JSON response, not a real token stream, so this is a
   // presentation effect over real (already-arrived) text, not a claim that
@@ -47,11 +55,7 @@ export function ProductAiPanel({ product }: { product: Product }) {
     setStatus('loading');
     typedFromCache.current = false;
     try {
-      const unitPrice = calculateUnitPrice(product);
       const conflict = hasAllergenConflict(product, profile.allergies);
-      const reason =
-        getRecommendationReason(product, profile, { isBestValue: false }) ??
-        `${formatUnitPrice(unitPrice) ?? formatAudFallback(product.priceAud)} in ${product.category}.`;
 
       const res = await fetch('/api/ai/explain', {
         method: 'POST',
@@ -65,7 +69,7 @@ export function ProductAiPanel({ product }: { product: Product }) {
                 priceAud: product.priceAud,
                 unitPriceLabel: formatUnitPrice(unitPrice),
                 allergenConflict: conflict,
-                reason,
+                reason: deterministicReason,
               },
             ],
           },
@@ -92,6 +96,8 @@ export function ProductAiPanel({ product }: { product: Product }) {
   return (
     <Card className="flex flex-col gap-3">
       <p className="font-semibold">What Plantry thinks</p>
+
+      {fullText === null && <p className="text-sm">{deterministicReason}</p>}
 
       {status === 'idle' && fullText === null && (
         <button
@@ -131,8 +137,4 @@ export function ProductAiPanel({ product }: { product: Product }) {
       )}
     </Card>
   );
-}
-
-function formatAudFallback(amount: number): string {
-  return new Intl.NumberFormat('en-AU', { style: 'currency', currency: 'AUD' }).format(amount);
 }

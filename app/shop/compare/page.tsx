@@ -1,10 +1,13 @@
 import Link from 'next/link';
 import { getProductById } from '@/lib/seed-data';
+import { createClient } from '@/lib/supabase/server';
+import { fetchNutritionByNames } from '@/lib/supabase/nutrition';
 import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { AllergyWarning } from '@/components/common/AllergyWarning';
 import { AddToCartButton } from '@/components/common/AddToCartButton';
 import { ProductRecommendationInfo } from '@/components/common/ProductRecommendationInfo';
+import { NutritionPanel } from '@/components/common/NutritionPanel';
 import { CompareAiVerdict } from '@/components/common/CompareAiVerdict';
 
 export default async function ComparePage({
@@ -17,6 +20,14 @@ export default async function ComparePage({
     .split(',')
     .map((id) => getProductById(id))
     .filter((p): p is NonNullable<typeof p> => Boolean(p));
+
+  const supabase = await createClient();
+  const nutritionByName = supabase
+    ? await fetchNutritionByNames(
+        supabase,
+        products.map((p) => p.name),
+      )
+    : new Map();
 
   return (
     <div className="flex flex-col gap-6">
@@ -48,6 +59,7 @@ export default async function ComparePage({
               </p>
               <AllergyWarning allergens={product.allergens} />
               <ProductRecommendationInfo product={product} />
+              <NutritionPanel nutrition={nutritionByName.get(product.name) ?? null} />
               <AddToCartButton productId={product.id} />
             </Card>
           ))}

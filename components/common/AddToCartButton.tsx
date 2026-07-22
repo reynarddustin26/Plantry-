@@ -4,7 +4,13 @@ import { useEffect, useState } from 'react';
 import { Button } from '@/components/ui/Button';
 import { useCartStore } from '@/store/cartStore';
 
-export function AddToCartButton({ productId }: { productId: string }) {
+export function AddToCartButton({
+  productId,
+  className,
+}: {
+  productId: string;
+  className?: string;
+}) {
   const addItem = useCartStore((s) => s.addItem);
   const [added, setAdded] = useState(false);
 
@@ -16,6 +22,7 @@ export function AddToCartButton({ productId }: { productId: string }) {
 
   return (
     <Button
+      className={className}
       onClick={() => {
         addItem(productId);
         setAdded(true);

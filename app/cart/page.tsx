@@ -9,6 +9,7 @@ import { formatAud } from '@/lib/utils';
 import { Card } from '@/components/ui/Card';
 import { PlantryMascot } from '@/components/common/PlantryMascot';
 import { CartOptimiserPanel } from '@/components/common/CartOptimiserPanel';
+import { BasketNutritionSummary } from '@/components/common/BasketNutritionSummary';
 
 export default function CartPage() {
   const items = useCartStore((s) => s.items);
@@ -100,6 +101,8 @@ export default function CartPage() {
           {formatAud(summary.totalPriceAud)}
         </p>
       </Card>
+
+      <BasketNutritionSummary lineItems={summary.lineItems} />
 
       <button
         type="button"
