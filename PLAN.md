@@ -709,6 +709,11 @@ codebase was touched.
 - Meets blueprint §9's core requirement directly: the app is fully usable
   right now with `ANTHROPIC_API_KEY` absent, because that's the actual
   current state, not a hypothetical one.
+- **Re-verified live** after Phase 5's migration landed: `resolveRateLimitKey`
+  now actually calls the live Supabase `auth.getUser()` (previously
+  short-circuited to null when unconfigured) — re-tested against the running
+  dev server with an anonymous request, confirmed no crash and correct
+  fallback-to-IP-key behavior, zero errors in the server log.
 
 ---
 
