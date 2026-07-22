@@ -36,11 +36,18 @@ export const useCartStore = create<CartState>()(
           if (quantity <= 0) {
             return { items: state.items.filter((i) => i.productId !== productId) };
           }
-          return {
-            items: state.items.map((i) =>
-              i.productId === productId ? { ...i, quantity } : i,
-            ),
-          };
+          const existing = state.items.find((i) => i.productId === productId);
+          if (existing) {
+            return {
+              items: state.items.map((i) =>
+                i.productId === productId ? { ...i, quantity } : i,
+              ),
+            };
+          }
+          // Upsert: a product not already in the cart (e.g. the optimiser's
+          // swap target) must still be added, not silently dropped — a
+          // .map() alone never matches a productId that isn't there yet.
+          return { items: [...state.items, { productId, quantity }] };
         }),
       setItems: (items) => set({ items }),
       clear: () => set({ items: [] }),

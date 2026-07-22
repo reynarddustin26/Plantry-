@@ -1529,3 +1529,74 @@ deleted it again afterward:
   (migration 0002) and Supabase cart sync stays local-only (migration
   0003) — both require the user to run the migration file already sitting
   in `supabase/migrations/`, same category as the earlier AI-key blocker.
+
+## Critical fix: optimiser net-deleting cart items, misleading 0g nutrition
+
+Two bugs reported against the live site. One's stated root cause was
+false (no `product_nutrition` table exists — same premise checked and
+rejected in the previous nutrition-fix round); the other's stated
+mechanism ("clicking Optimise deletes items") didn't reproduce, but live
+testing surfaced the *real* bug it was actually describing, one level
+deeper than the report.
+
+- **The real Bug 1**: `store/cartStore.ts`'s `setQuantity` only updated
+  an item's quantity via `.map()` over the existing array — for a
+  product **not already in the cart** (exactly the optimiser's swap
+  target), the map matches nothing and silently no-ops. `acceptSwap`
+  called `removeItem(original)` then `setQuantity(suggested, quantity)`:
+  the removal always worked, the "add" never did. Net effect: every
+  accepted swap shrank the cart by one item — confirmed live (3 items,
+  $8.30 → accept one swap → cart showed 2 items, $4.80, the replacement
+  simply never appeared; verified by reading the raw persisted
+  `plantry-cart` localStorage value). Opening the optimiser itself, and
+  Skip, were already correctly read-only — confirmed by testing before
+  touching any code, so as not to "fix" something that wasn't broken.
+  **Fix**: `setQuantity` now upserts — adds the item if it isn't already
+  present, instead of only ever updating an existing one. Added
+  `store/cartStore.test.ts` (7 new tests) with an explicit regression
+  test for this exact scenario.
+- Redesigned `CartOptimiserPanel.tsx` to match the requested layout:
+  "💡 Optimiser suggestions" header, "Accept swap"/"Skip" per suggestion,
+  a "Total potential saving" line, "Accept all"/"Cancel", and a transient
+  amber "Saved $X.XX" toast per accept (2.5s). Did not adopt the mockup's
+  example reason text ("Same nutrition", "Similar protein") verbatim —
+  `lib/optimisation.ts`'s swap engine is price-per-unit only and has no
+  nutrition-comparison signal behind it, so printing those claims would
+  be exactly the kind of fabrication this project's core rule forbids.
+  Kept the real, deterministic reason string instead.
+- Added the two requested polish states: an empty-cart guard inside the
+  panel ("Add items to your cart first" — defensive, since the parent
+  page already hides the Optimise button entirely when the cart is
+  empty, so this path isn't reachable through normal navigation but is
+  now safe if it ever is), and "Your basket is already well optimised! 🌱"
+  when no swap candidates remain — both verified live.
+- **Bug 2, real part**: `BasketNutritionSummary.tsx` summed nutrition
+  only from items with real data, which is correct, but rendered that
+  sum unconditionally — so a cart entirely of no-data products showed a
+  literal `0kcal / 0g`, indistinguishable from "you truly consumed
+  zero," which is exactly the misleading case the report described.
+  Fixed by tracking `itemsWithData` vs `totalItems`: each stat now
+  renders `—` when zero items contributed anything, and the disclaimer
+  reads "⚠️ Estimate based on X of Y items — some products lack complete
+  nutrition data" (exact requested wording) whenever the total is
+  partial. Verified live with a 3-item cart where none of the three had
+  ingested nutrition: all four stats showed `—`, disclaimer read "0 of 3
+  items".
+- **Bug 2, Step 4 (backfill missing nutrition via Open Food Facts/USDA,
+  tag `data_provenance`) — deliberately not done in this pass.** This is
+  real, separate Phase-6-scale ingestion work (43 of 62 catalog products
+  still have no nutrition row), not a bug fix, and wasn't blocking the
+  actual user-facing symptom — the UI now handles missing data honestly
+  regardless of how much of it eventually gets backfilled. Flagged
+  explicitly rather than silently skipped or silently attempted without
+  being asked.
+
+### Gate status: complete, all green
+- `npm run lint` ✓, `npm run build` ✓ (same 15 routes, zero TS errors),
+  `npm run test` ✓ (114/114 — 7 new cart store tests, including the
+  regression test for the exact bug above).
+- Live-verified the full manual checklist: 3 items added → Optimise →
+  cart unchanged → Skip → cart unchanged → Accept → correct swap with no
+  net item loss → nutrition shows `—` not `0` for a fully-unknown basket
+  → empty-basket and no-swap-found states both render their friendly
+  message, never blank or crashing.

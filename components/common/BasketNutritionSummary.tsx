@@ -16,7 +16,8 @@ interface Totals {
   protein: number;
   carbs: number;
   fat: number;
-  incomplete: boolean;
+  itemsWithData: number;
+  totalItems: number;
 }
 
 function barColor(percent: number): string {
@@ -25,15 +26,27 @@ function barColor(percent: number): string {
   return 'var(--emerald)';
 }
 
-function ProgressBar({ label, value, unit, target }: { label: string; value: number; unit: string; target: number }) {
-  const percent = target > 0 ? (value / target) * 100 : 0;
+// value === null means "no cart item contributed any real data for this
+// nutrient" — genuinely unknown, never rendered as a misleading 0.
+function ProgressBar({
+  label,
+  value,
+  unit,
+  target,
+}: {
+  label: string;
+  value: number | null;
+  unit: string;
+  target: number;
+}) {
+  const percent = value != null && target > 0 ? (value / target) * 100 : 0;
   return (
     <div className="flex flex-col gap-1">
       <div className="flex items-baseline justify-between text-sm">
         <span className="text-muted-foreground">{label}</span>
         <span className="font-bold">
-          {value.toFixed(0)}
-          {unit} <span className="font-normal text-muted-foreground">/ {target}{unit}</span>
+          {value != null ? value.toFixed(0) : '—'}
+          {value != null && unit} <span className="font-normal text-muted-foreground">/ {target}{unit}</span>
         </span>
       </div>
       <div className="h-2 overflow-hidden rounded-full bg-muted">
@@ -48,8 +61,10 @@ function ProgressBar({ label, value, unit, target }: { label: string; value: num
 
 // Basket totals are real, computed from actual ingested nutrition_per_100g
 // values × each product's parsed package weight × quantity — never a guess.
-// Line items with no matching nutrition data (or a non-weight package size,
-// e.g. "12pk") are excluded from the sum and flagged via `incomplete`.
+// A line item with no matching nutrition data (or a non-weight package
+// size, e.g. "12pk") contributes nothing to the sum and is counted toward
+// `totalItems` but not `itemsWithData` — when NO item has any data, the
+// total itself is unknown ("—"), not a fabricated 0.
 export function BasketNutritionSummary({ lineItems }: { lineItems: CartLineItem[] }) {
   const { profile } = useProfile();
   const [totals, setTotals] = useState<Totals | null>(null);
@@ -69,24 +84,22 @@ export function BasketNutritionSummary({ lineItems }: { lineItems: CartLineItem[
       let protein = 0;
       let carbs = 0;
       let fat = 0;
-      let incomplete = false;
+      let itemsWithData = 0;
 
       for (const { product, quantity } of lineItems) {
         const nutrition = nutritionByName.get(product.name);
         const parsed = parsePackageSize(product.packageSize);
-        if (!nutrition || parsed?.totalGrams === undefined) {
-          incomplete = true;
-          continue;
-        }
+        if (!nutrition || parsed?.totalGrams === undefined) continue;
+
+        itemsWithData += 1;
         const factor = (parsed.totalGrams / 100) * quantity;
         calories += (nutrition.calories ?? 0) * factor;
         protein += (nutrition.protein ?? 0) * factor;
         carbs += (nutrition.carbs ?? 0) * factor;
         fat += (nutrition.fat ?? 0) * factor;
-        if (nutrition.calories == null || nutrition.protein == null) incomplete = true;
       }
 
-      setTotals({ calories, protein, carbs, fat, incomplete });
+      setTotals({ calories, protein, carbs, fat, itemsWithData, totalItems: lineItems.length });
     });
 
     return () => {
@@ -98,23 +111,36 @@ export function BasketNutritionSummary({ lineItems }: { lineItems: CartLineItem[
 
   const calorieTarget = DEFAULT_CALORIE_TARGET;
   const proteinTarget = profile?.proteinTarget || DEFAULT_PROTEIN_TARGET;
+  const hasAnyData = totals.itemsWithData > 0;
+  const isIncomplete = totals.itemsWithData < totals.totalItems;
 
   return (
     <Card className="flex flex-col gap-3">
       <p className="font-semibold">Basket nutrition total</p>
-      <ProgressBar label="Calories" value={totals.calories} unit="kcal" target={calorieTarget} />
-      <ProgressBar label="Protein" value={totals.protein} unit="g" target={proteinTarget} />
+      <ProgressBar
+        label="Calories"
+        value={hasAnyData ? totals.calories : null}
+        unit="kcal"
+        target={calorieTarget}
+      />
+      <ProgressBar
+        label="Protein"
+        value={hasAnyData ? totals.protein : null}
+        unit="g"
+        target={proteinTarget}
+      />
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Carbs</span>
-        <span className="font-bold">{totals.carbs.toFixed(0)}g</span>
+        <span className="font-bold">{hasAnyData ? `${totals.carbs.toFixed(0)}g` : '—'}</span>
       </div>
       <div className="flex items-center justify-between text-sm">
         <span className="text-muted-foreground">Fat</span>
-        <span className="font-bold">{totals.fat.toFixed(0)}g</span>
+        <span className="font-bold">{hasAnyData ? `${totals.fat.toFixed(0)}g` : '—'}</span>
       </div>
-      {totals.incomplete && (
+      {isIncomplete && (
         <p className="text-xs italic text-muted-foreground">
-          Nutrition estimate — some items lack complete data.
+          ⚠️ Estimate based on {totals.itemsWithData} of {totals.totalItems} items — some
+          products lack complete nutrition data.
         </p>
       )}
     </Card>
